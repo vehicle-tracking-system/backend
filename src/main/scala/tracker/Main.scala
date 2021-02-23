@@ -1,6 +1,7 @@
 package tracker
 
 import java.util.concurrent.TimeUnit
+import tracker.dao.UserDAO
 import cats.effect.{Clock, Resource}
 import com.avast.sst.bundle.ZioServerApp
 import com.avast.sst.doobie.DoobieHikariModule
@@ -55,15 +56,17 @@ object Main extends ZioServerApp {
         DoobieHikariModule
           .make[Task](configuration.database, boundedConnectExecutionContext, executorModule.blocker, Some(hikariMetricsFactory))
 
+      userDAO = UserDAO(doobieTransactor)
+
       randomService = RandomService(doobieTransactor)
-      userService = UserService(doobieTransactor, configuration.jwt)
+      userService = UserService(userDAO, configuration.jwt)
 
       httpClient <- Http4sBlazeClientModule.make[Task](configuration.client, executorModule.executionContext)
       circuitBreakerMetrics <- Resource.liftF(MicrometerCircuitBreakerMetricsModule.make[Task]("test-http-client", meterRegistry))
       circuitBreaker <- Resource.liftF(CircuitBreakerModule[Task].make(configuration.circuitBreaker, clock))
       enrichedCircuitBreaker = withLogging("test-http-client", withMetrics(circuitBreakerMetrics, circuitBreaker))
       client = Http4sClientCircuitBreakerModule.make[Task](httpClient, enrichedCircuitBreaker)
-      routingModule = new Http4sRoutingModule(randomService, userService, client, serverMetricsModule, configuration)
+      routingModule = new Http4sRoutingModule(randomService, userDAO, userService, client, serverMetricsModule, configuration)
       server <- Http4sBlazeServerModule.make[Task](configuration.server, routingModule.router, executorModule.executionContext)
     } yield server
   }

@@ -6,18 +6,20 @@ import com.avast.sst.http4s.server.micrometer.MicrometerHttp4sServerMetricsModul
 import io.circe.syntax._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
-import org.http4s.{AuthedRoutes, HttpApp, HttpRoutes, Request, Response}
+import org.http4s.{AuthedRequest, AuthedRoutes, HttpApp, HttpRoutes, Request, Response}
 import tracker.config.Configuration
-import tracker.model.User
 import tracker.request.LoginRequest
 import tracker.security.{AuthJwtMiddleware, DefaultAccessTokenParser}
 import tracker.service.{RandomService, UserService}
 import zio.Task
 import zio.interop.catz._
 import org.http4s.circe.CirceEntityCodec._
+import tracker.dao.UserDAO
+import tracker.{Role, Roles, User}
 
 class Http4sRoutingModule(
                            randomService: RandomService,
+                           userDAO: UserDAO,
                            userService: UserService,
                            client: Client[Task],
                            serverMetricsModule: MicrometerHttp4sServerMetricsModule[Task],
@@ -28,17 +30,20 @@ class Http4sRoutingModule(
 
   private val helloWorldRoute = routeMetrics.wrap("hello")(Ok("Hello World!"))
 
-  private val authMiddleware = AuthJwtMiddleware(DefaultAccessTokenParser, config.jwt, userService)
+  private val authMiddleware = AuthJwtMiddleware(DefaultAccessTokenParser, config.jwt, userDAO)
 
-  val authedRoutes: AuthedRoutes[User, Task] = AuthedRoutes.of {
+  private val authedRoutes: AuthedRoutes[User, Task] = AuthedRoutes.of {
     case GET -> Root / "auth" as user => Ok(s"User: ${user}")
+    case request@GET -> Root / "withRole" as _ => withRoles(Roles.User) { _ =>
+      Ok("ok")
+    }(request)
   }
 
   private val routes = HttpRoutes.of[Task] {
     case GET -> Root / "hello" => helloWorldRoute
     case GET -> Root / "random" => randomService.randomNumber.map(_.toString).flatMap(Ok(_))
     case GET -> Root / "circuit-breaker" => client.expect[String]("https://httpbin.org/status/500").flatMap(Ok(_))
-    case GET -> Root / "user" / id => userService.find(id.toLong).map(_.asJson.toString).flatMap(Ok(_))
+    case GET -> Root / "user" / id => userService.getUserById(id.toLong).map(_.asJson.toString).flatMap(Ok(_))
     case request@POST -> Root / "login" => handleLogin(request)
   } <+> authMiddleware(authedRoutes)
 
@@ -56,4 +61,14 @@ class Http4sRoutingModule(
     }
   }
 
+  private def withRoles(roles: Role*)(f: AuthedRequest[Task, User] => Task[Response[Task]])(request: AuthedRequest[Task, User]): Task[Response[Task]] = {
+    val user = request.context
+//    ???
+
+    if (roles.toSet.subsetOf(user.roles)) {
+      f.apply(request)
+    } else {
+      Forbidden()
+    }
+  }
 }

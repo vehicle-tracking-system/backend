@@ -5,9 +5,9 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.server.AuthMiddleware
 import org.http4s.util.CaseInsensitiveString
 import org.http4s.{AuthedRoutes, Request}
+import tracker.User
 import tracker.config.JwtConfig
-import tracker.model.User
-import tracker.service.UserService
+import tracker.dao.UserDAO
 import zio.interop.catz._
 import zio.{IO, Task}
 
@@ -16,13 +16,13 @@ object AuthJwtMiddleware {
 
   import dsl._
 
-  def apply(tokenParser: AccessTokenParser, jwtConfig: JwtConfig, userService: UserService): AuthMiddleware[Task, User] = {
+  def apply(tokenParser: AccessTokenParser, jwtConfig: JwtConfig, userDAO: UserDAO): AuthMiddleware[Task, User] = {
     val authUser: Kleisli[Task, Request[Task], Either[String, User]] = Kleisli { request =>
         (for {
           header <- IO.fromEither(request.headers.get(CaseInsensitiveString("authorization")).map(_.value).toRight("Authorization header not found"))
           token <- IO.fromEither(tokenParser.parseAccessToken(header, jwtConfig.secret))
           clientId <- IO.fromEither(token.clientId.toLongOption.toRight("Could not convert ID to number"))
-          userOpt <- userService.find(clientId).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
+          userOpt <- userDAO.find(clientId).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
           user <- IO.fromEither(userOpt.toRight("User not found"))
         } yield {
           user
