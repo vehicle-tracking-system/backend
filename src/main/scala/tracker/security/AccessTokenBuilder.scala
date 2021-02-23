@@ -11,7 +11,7 @@ object AccessTokenBuilder {
 
   def createToken(payload: Json, jwtConfig: JwtConfig): String = {
     val header = JwtHeader(jwtConfig.algorithm)
-    val claim = JwtClaim(payload.noSpaces).issuedNow.expiresIn(600)
+    val claim = JwtClaim(payload.noSpaces).issuedNow.expiresIn(jwtConfig.expiration)
 
     JwtCirce.encode(header, claim, jwtConfig.secret)
   }

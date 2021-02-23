@@ -6,6 +6,7 @@ import pureconfig.generic.semiauto.deriveReader
 
 final case class JwtConfig(
                             secret: String,
+                            expiration: Long,
                             algorithm: JwtAlgorithm
                           )
 
