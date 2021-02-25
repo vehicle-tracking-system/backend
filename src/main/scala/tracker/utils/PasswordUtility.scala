@@ -2,9 +2,10 @@ package tracker.utils
 
 import java.security.SecureRandom
 import java.util.Base64
+
 import javax.crypto._
 import javax.crypto.spec.PBEKeySpec
-import org.log4s.{Logger, getLogger}
+import org.log4s.{getLogger, Logger}
 
 class PasswordUtility {
   val DefaultIterations = 10000

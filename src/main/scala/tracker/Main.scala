@@ -1,13 +1,10 @@
 package tracker
 
 import java.util.concurrent.TimeUnit
-import tracker.dao.UserDAO
+
 import cats.effect.{Clock, Resource}
 import com.avast.sst.bundle.ZioServerApp
 import com.avast.sst.doobie.DoobieHikariModule
-import tracker.config.Configuration
-import tracker.module.Http4sRoutingModule
-import tracker.service.{RandomService, UserService}
 import com.avast.sst.http4s.client.Http4sBlazeClientModule
 import com.avast.sst.http4s.client.monix.catnap.Http4sClientCircuitBreakerModule
 import com.avast.sst.http4s.server.Http4sBlazeServerModule
@@ -23,6 +20,10 @@ import com.avast.sst.monix.catnap.micrometer.MicrometerCircuitBreakerMetricsModu
 import com.avast.sst.pureconfig.PureConfigModule
 import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
 import org.http4s.server.Server
+import tracker.config.Configuration
+import tracker.dao.UserDAO
+import tracker.module.Http4sRoutingModule
+import tracker.service.UserService
 import zio.Task
 import zio.interop.catz._
 import zio.interop.catz.implicits._
@@ -58,7 +59,6 @@ object Main extends ZioServerApp {
 
       userDAO = UserDAO(doobieTransactor)
 
-      randomService = RandomService(doobieTransactor)
       userService = UserService(userDAO, configuration.jwt)
 
       httpClient <- Http4sBlazeClientModule.make[Task](configuration.client, executorModule.executionContext)
@@ -66,7 +66,7 @@ object Main extends ZioServerApp {
       circuitBreaker <- Resource.liftF(CircuitBreakerModule[Task].make(configuration.circuitBreaker, clock))
       enrichedCircuitBreaker = withLogging("test-http-client", withMetrics(circuitBreakerMetrics, circuitBreaker))
       client = Http4sClientCircuitBreakerModule.make[Task](httpClient, enrichedCircuitBreaker)
-      routingModule = new Http4sRoutingModule(randomService, userDAO, userService, client, serverMetricsModule, configuration)
+      routingModule = new Http4sRoutingModule(userDAO, userService, client, serverMetricsModule, configuration)
       server <- Http4sBlazeServerModule.make[Task](configuration.server, routingModule.router, executorModule.executionContext)
     } yield server
   }

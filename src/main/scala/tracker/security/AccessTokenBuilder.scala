@@ -1,10 +1,10 @@
 package tracker.security
 
+import java.time.Clock
+
 import io.circe.Json
 import pdi.jwt.{JwtCirce, JwtClaim, JwtHeader}
 import tracker.config.JwtConfig
-
-import java.time.Clock
 
 object AccessTokenBuilder {
   implicit val clock: Clock = Clock.systemUTC

@@ -12,17 +12,26 @@ import zio.Task
 
 class UserService(userDAO: UserDAO, jwtConfig: JwtConfig) {
 
-  def getUserById(id: Long) : Task[Option[User]] = {
+  def getUserById(id: Long): Task[Option[User]] = {
     userDAO.find(id)
   }
 
   def login(loginRequest: LoginRequest): Task[Option[AccessTokenResponse]] = {
-    userDAO.findByUsername(loginRequest.username).map(_.flatMap { user =>
-      if (PasswordUtility.checkPassword(loginRequest.password, user.password)) {
-        Some(AccessTokenResponse(AccessTokenBuilder.createToken(parse(s"""{"clientId":"${user.id}"}""")
-          .getOrElse(throw new IllegalStateException("JWT token creating error")), jwtConfig)))
-      } else None
-    })
+    userDAO
+      .findByUsername(loginRequest.username)
+      .map(_.flatMap { user =>
+        if (PasswordUtility.checkPassword(loginRequest.password, user.password)) {
+          Some(
+            AccessTokenResponse(
+              AccessTokenBuilder.createToken(
+                parse(s"""{"clientId":"${user.id}"}""")
+                  .getOrElse(throw new IllegalStateException("JWT token creating error")),
+                jwtConfig
+              )
+            )
+          )
+        } else None
+      })
   }
 }
 

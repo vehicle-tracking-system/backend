@@ -5,10 +5,10 @@ import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
 final case class JwtConfig(
-                            secret: String,
-                            expiration: Long,
-                            algorithm: JwtAlgorithm
-                          )
+    secret: String,
+    expiration: Long,
+    algorithm: JwtAlgorithm
+)
 
 object JwtConfig {
   implicit val jwtAlgorithmReader: ConfigReader[JwtAlgorithm] = ConfigReader[String].map(JwtAlgorithm.fromString)
