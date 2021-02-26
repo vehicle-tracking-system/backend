@@ -1,7 +1,7 @@
-package tracker.response
+package tracker
 
 import io.circe.Encoder
-import io.circe.generic.semiauto._
+import io.circe.generic.semiauto.deriveEncoder
 
 final case class AccessTokenResponse(token: String)
 

@@ -10,7 +10,7 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.{AuthedRequest, AuthedRoutes, HttpApp, HttpRoutes, Request, Response}
 import tracker.config.Configuration
 import tracker.dao.UserDAO
-import tracker.request.LoginRequest
+import tracker._
 import tracker.security.{AuthJwtMiddleware, DefaultAccessTokenParser}
 import tracker.service.UserService
 import tracker.{Role, Roles, User}
@@ -32,10 +32,18 @@ class Http4sRoutingModule(
   private val authMiddleware = AuthJwtMiddleware(DefaultAccessTokenParser, config.jwt, userDAO)
 
   private val authedRoutes: AuthedRoutes[User, Task] = AuthedRoutes.of {
-    case GET -> Root / "auth" as user => Ok(s"User: ${user}")
+    case GET -> Root / "auth" as user => Ok(s"User: $user")
     case request @ GET -> Root / "withRole" as _ =>
-      withRoles(Roles.User) { _ =>
+      withRoles(Roles.User) {
         Ok("ok")
+      }(request)
+    case request @ POST -> Root / "user" / "new" as _ =>
+      withRoles(Roles.User) {
+        handleNewUser(request.req)
+      }(request)
+    case request @ POST -> Root / "user" as _ =>
+      withRoles(Roles.User) {
+        handleUpdateUser(request.req)
       }(request)
   }
 
@@ -53,20 +61,27 @@ class Http4sRoutingModule(
   }
 
   private def handleLogin(req: Request[Task]): Task[Response[Task]] = {
-    req.as[LoginRequest].flatMap(loginRequest => userService.login(loginRequest)).flatMap {
+    req.as[LoginRequest].flatMap(userService.login).flatMap {
       case Some(at) => Ok(at)
       case None     => Forbidden()
     }
   }
 
+  private def handleNewUser(req: Request[Task]): Task[Response[Task]] = {
+    req.as[NewUserRequest].flatMap(userService.persist).flatMap(Ok(_))
+  }
+
+  private def handleUpdateUser(req: Request[Task]): Task[Response[Task]] = {
+    req.as[UpdateUserRequest].flatMap(userService.persist).flatMap(Ok(_))
+  }
+
   private def withRoles(
       roles: Role*
-  )(f: AuthedRequest[Task, User] => Task[Response[Task]])(request: AuthedRequest[Task, User]): Task[Response[Task]] = {
+  )(f: Task[Response[Task]])(request: AuthedRequest[Task, User]): Task[Response[Task]] = {
     val user = request.context
-    //    ???
 
     if (roles.toSet.subsetOf(user.roles)) {
-      f.apply(request)
+      f
     } else {
       Forbidden()
     }

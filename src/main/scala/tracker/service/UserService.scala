@@ -4,8 +4,7 @@ import io.circe.parser._
 import tracker.User
 import tracker.config.JwtConfig
 import tracker.dao.UserDAO
-import tracker.request.LoginRequest
-import tracker.response.AccessTokenResponse
+import tracker._
 import tracker.security.AccessTokenBuilder
 import tracker.utils.PasswordUtility
 import zio.Task
@@ -32,6 +31,14 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig) {
           )
         } else None
       })
+  }
+
+  def persist(userRequest: UserRequest): Task[Int] = {
+    if (userRequest.user.id == -1) {
+      userDAO.persist(userRequest.user)
+    } else {
+      userDAO.update(userRequest.user)
+    }
   }
 }
 

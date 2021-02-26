@@ -1,7 +1,6 @@
 package tracker
 
 import java.time.ZonedDateTime
-
 import doobie.h2.implicits._
 import doobie.implicits.javatime._
 import doobie.util.{Get, Put, Read, Write}
@@ -19,9 +18,10 @@ final case class User(
 ) {}
 
 object User {
-  implicit val encoder: Encoder[User] = deriveEncoder
+  implicit val userEncoder: Encoder[User] = deriveEncoder
+  implicit val userDecoder: Decoder[User] = deriveDecoder
 
-  implicit val userReader: Read[User] = Read[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].map {
+  implicit val userReade: Read[User] = Read[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].map {
     case (id, name, createdAt, deletedAt, password, username, roles) =>
       new User(
         id,
@@ -36,7 +36,7 @@ object User {
       )
   }
 
-  implicit val userWriter: Write[User] = Write[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].contramap { user =>
+  implicit val userWrite: Write[User] = Write[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].contramap { user =>
     (user.id, user.name, user.createdAt, user.deletedAt, user.password, user.username, user.roles.map(Role.toString).toList)
   }
 }
@@ -54,10 +54,11 @@ object Roles {
 }
 
 object Role {
-  implicit val decoder: Decoder[Role] = Decoder.decodeString.emap(fromString)
-  implicit val encodeRole: Encoder[Role] = Encoder.encodeString.contramap(toString)
+  implicit val roleDecoder: Decoder[Role] = Decoder.decodeString.emap(fromString)
+  implicit val roleEncoder: Encoder[Role] = Encoder.encodeString.contramap(toString)
   implicit val roleRead: Get[Role] = Get[String].temap(fromString)
   implicit val roleWrite: Put[Role] = Put[String].contramap(toString)
+  implicit val roleListWrite: Put[List[Role]] = Put[List[String]].contramap(_.map(toString))
 
   def fromString(name: String): Either[String, Role] = {
     name match {

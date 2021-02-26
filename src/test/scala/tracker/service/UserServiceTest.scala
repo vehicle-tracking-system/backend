@@ -21,6 +21,10 @@ class UserServiceTest extends AsyncFunSuite {
       Task.succeed {
         users.find(u => u.username == username)
       }
+
+    override def persist(user: User): Task[Int] = throw new NotImplementedError("User persisting is not implemented for testing purposes.")
+
+    override def update(user: User): Task[Int] = throw new NotImplementedError("User updating is not implemented for testing purposes.")
   }
 
   object UserDAOTest {
@@ -41,7 +45,7 @@ class UserServiceTest extends AsyncFunSuite {
     )
 
     assert(
-      user.asJson.noSpaces == "{\"id\":1,\"name\":\"Karel\",\"createdAt\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"deletedAt\":null,\"password\":\"10000:WS4enQfVmeoAtnCXUtRqCdHu+A1Tv7i1QReXH/bj5pU=:aumeogsLFIqGr9HrfvxdMw==\",\"username\":\"karel\",\"roles\":[\"USER\"]}"
+      user.asJson.noSpaces == """{"id":1,"name":"Karel","createdAt":"2021-02-25T00:00:00+01:00[Europe/Prague]","deletedAt":null,"password":"10000:WS4enQfVmeoAtnCXUtRqCdHu+A1Tv7i1QReXH/bj5pU=:aumeogsLFIqGr9HrfvxdMw==","username":"karel","roles":["USER"]}"""
     )
   }
 
@@ -57,7 +61,7 @@ class UserServiceTest extends AsyncFunSuite {
     )
 
     assert(
-      user.asJson.noSpaces == "{\"id\":1,\"name\":\"Karel\",\"createdAt\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"deletedAt\":\"2222-02-25T05:00:25+01:00[Europe/Prague]\",\"password\":\"10000:WS4enQfVmeoAtnCXUtRqCdHu+A1Tv7i1QReXH/bj5pU=:aumeogsLFIqGr9HrfvxdMw==\",\"username\":\"karel\",\"roles\":[\"USER\"]}"
+      user.asJson.noSpaces == """{"id":1,"name":"Karel","createdAt":"2021-02-25T00:00:00+01:00[Europe/Prague]","deletedAt":"2222-02-25T05:00:25+01:00[Europe/Prague]","password":"10000:WS4enQfVmeoAtnCXUtRqCdHu+A1Tv7i1QReXH/bj5pU=:aumeogsLFIqGr9HrfvxdMw==","username":"karel","roles":["USER"]}"""
     )
   }
 
