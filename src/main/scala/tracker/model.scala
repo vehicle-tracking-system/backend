@@ -47,7 +47,7 @@ object Roles {
 
   case object Read extends Role
 
-  case object Write extends Role
+  case object Admin extends Role
 
   case object User extends Role
 
@@ -62,8 +62,8 @@ object Role {
 
   def fromString(name: String): Either[String, Role] = {
     name match {
+      case "ADMIN" => Right(Roles.Admin)
       case "READ"  => Right(Roles.Read)
-      case "WRITE" => Right(Roles.Write)
       case "USER"  => Right(Roles.User)
       case _       => Left(s"Non existing role: $name")
     }
@@ -72,8 +72,50 @@ object Role {
   def toString(role: Role): String = {
     role match {
       case Roles.Read  => "READ"
-      case Roles.Write => "WRITE"
+      case Roles.Admin => "ADMIN"
       case Roles.User  => "USER"
     }
   }
+}
+
+final case class LightVehicle(id: Long, name: String) {}
+final case class Vehicle(vehicle: LightVehicle, fleets: List[LightFleet]) {
+  def toLight: LightVehicle = this.vehicle
+}
+
+object LightVehicle {
+  implicit val encoder: Encoder[LightVehicle] = deriveEncoder
+  implicit val decoder: Decoder[LightVehicle] = deriveDecoder
+}
+
+object Vehicle {
+  implicit val encoder: Encoder[Vehicle] = deriveEncoder
+  implicit val decoder: Decoder[Vehicle] = deriveDecoder
+}
+
+final case class LightFleet(id: Long, name: String) {}
+final case class Fleet(fleet: LightFleet, vehicles: List[LightVehicle]) {}
+
+object LightFleet {
+  implicit val encoder: Encoder[LightFleet] = deriveEncoder
+  implicit val decoder: Decoder[LightFleet] = deriveDecoder
+}
+
+object Fleet {
+  implicit val encoder: Encoder[Fleet] = deriveEncoder
+  implicit val decoder: Decoder[Fleet] = deriveDecoder
+}
+
+final case class VehicleFleet(id: Long, vehicleId: Long, fleetId: Long)
+
+object VehicleFleet {
+  implicit val encoder: Encoder[VehicleFleet] = deriveEncoder
+  implicit val decoder: Decoder[VehicleFleet] = deriveDecoder
+}
+
+final case class Position(id: Long, vehicleId: Long, speed: Double, latitude: Long, longitude: Long, timestamp: ZonedDateTime)
+
+object Position {
+  implicit val encoder: Encoder[User] = deriveEncoder
+  implicit val decoder: Decoder[User] = deriveDecoder
 }
