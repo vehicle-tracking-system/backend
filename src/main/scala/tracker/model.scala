@@ -15,41 +15,54 @@ final case class User(
     password: String,
     username: String,
     roles: Set[Role]
-) {}
+)
 
 object User {
   implicit val userEncoder: Encoder[User] = deriveEncoder
   implicit val userDecoder: Decoder[User] = deriveDecoder
 
-  implicit val userReade: Read[User] = Read[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].map {
-    case (id, name, createdAt, deletedAt, password, username, roles) =>
-      new User(
-        id,
-        name,
-        createdAt,
-        deletedAt,
-        password,
-        username,
-        roles.map {
-          Role.fromString(_).fold(e => throw new IllegalStateException(s"Illegal value for role: $e"), identity)
-        }.toSet
-      )
-  }
+  implicit val userReade: Read[User] =
+    Read[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].map {
+      case (id, name, createdAt, deletedAt, password, username, roles) =>
+        new User(
+          id,
+          name,
+          createdAt,
+          deletedAt,
+          password,
+          username,
+          roles.map {
+            Role
+              .fromString(_)
+              .fold(e => throw new IllegalStateException(s"Illegal value for role: $e"), identity)
+          }.toSet
+        )
+    }
 
-  implicit val userWrite: Write[User] = Write[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].contramap { user =>
-    (user.id, user.name, user.createdAt, user.deletedAt, user.password, user.username, user.roles.map(Role.toString).toList)
-  }
+  implicit val userWrite: Write[User] =
+    Write[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].contramap { user =>
+      (
+        user.id,
+        user.name,
+        user.createdAt,
+        user.deletedAt,
+        user.password,
+        user.username,
+        user.roles.map(Role.toString).toList
+      )
+    }
 }
 
 sealed trait Role
 
 object Roles {
-
-  case object Read extends Role
-
   case object Admin extends Role
 
   case object User extends Role
+
+  case object Reader extends Role
+
+  case object Editor extends Role
 
 }
 
@@ -62,23 +75,25 @@ object Role {
 
   def fromString(name: String): Either[String, Role] = {
     name match {
-      case "ADMIN" => Right(Roles.Admin)
-      case "READ"  => Right(Roles.Read)
-      case "USER"  => Right(Roles.User)
-      case _       => Left(s"Non existing role: $name")
+      case "ADMIN"  => Right(Roles.Admin)
+      case "USER"   => Right(Roles.User)
+      case "READER" => Right(Roles.Reader)
+      case "EDITOR" => Right(Roles.Editor)
+      case _        => Left(s"Non existing role: $name")
     }
   }
 
   def toString(role: Role): String = {
     role match {
-      case Roles.Read  => "READ"
-      case Roles.Admin => "ADMIN"
-      case Roles.User  => "USER"
+      case Roles.Admin  => "ADMIN"
+      case Roles.User   => "USER"
+      case Roles.Editor => "EDITOR"
+      case Roles.Reader => "READER"
     }
   }
 }
 
-final case class LightVehicle(id: Long, name: String) {}
+final case class LightVehicle(id: Long, name: String)
 final case class Vehicle(vehicle: LightVehicle, fleets: List[LightFleet]) {
   def toLight: LightVehicle = this.vehicle
 }
@@ -93,8 +108,8 @@ object Vehicle {
   implicit val decoder: Decoder[Vehicle] = deriveDecoder
 }
 
-final case class LightFleet(id: Long, name: String) {}
-final case class Fleet(fleet: LightFleet, vehicles: List[LightVehicle]) {}
+final case class LightFleet(id: Long, name: String)
+final case class Fleet(fleet: LightFleet, vehicles: List[LightVehicle])
 
 object LightFleet {
   implicit val encoder: Encoder[LightFleet] = deriveEncoder
@@ -113,7 +128,14 @@ object VehicleFleet {
   implicit val decoder: Decoder[VehicleFleet] = deriveDecoder
 }
 
-final case class Position(id: Long, vehicleId: Long, speed: Double, latitude: Long, longitude: Long, timestamp: ZonedDateTime)
+final case class Position(
+    id: Long,
+    vehicleId: Long,
+    speed: Double,
+    latitude: Double,
+    longitude: Double,
+    timestamp: ZonedDateTime
+)
 
 object Position {
   implicit val encoder: Encoder[User] = deriveEncoder

@@ -26,7 +26,9 @@ object NewUserRequest {
       password <- c.downField("password").as[String]
       roles <- c.downField("roles").as[List[Role]]
     } yield {
-      new NewUserRequest(User(-1, name, ZonedDateTime.now(), None, PasswordUtility.hashPassword(password), username, roles.toSet))
+      new NewUserRequest(
+        User(-1, name, ZonedDateTime.now(), None, PasswordUtility.hashPassword(password), username, roles.toSet)
+      )
     }
 }
 
