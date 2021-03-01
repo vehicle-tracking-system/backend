@@ -1,11 +1,15 @@
 version: "3"
 
 services:
-  postgres:
-    image: postgres:12
+  server:
+    image: jehlima2/tracker-server:1.0
     ports:
-      - "5432:5432"
+      - 8085:8080
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
-      - POSTGRES_DB=database
+      - JWT_SECRET="mH@6@*6dp*p^8Xhegecv"
+      - JWT_EXPIRATION=600
+      - DB_JDBC_URL=jdbc:h2:/DB/docker;MODE=MySQL
+      - DB_USERNAME=
+      - DB_PASSWORD=
+    volumes:
+    - /home/dizider/DB:/DB

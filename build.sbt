@@ -2,6 +2,15 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / turbo := true
 ThisBuild / organization := "cz.cvut.fit"
 
+name := "tracker-server"
+version := "1.0"
+enablePlugins(JavaAppPackaging)
+
+enablePlugins(DockerPlugin)
+packageName in Docker := "jehlima2/" + packageName.value
+dockerExposedVolumes := Seq("/opt/docker/logs")
+dockerExposedPorts ++= Seq(8080)
+
 resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
 
 lazy val commonSettings = BuildSettings.common ++ Seq(
