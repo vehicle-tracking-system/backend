@@ -3,20 +3,30 @@ package tracker.module
 import cats.implicits._
 import com.avast.sst.http4s.server.Http4sRouting
 import com.avast.sst.http4s.server.micrometer.MicrometerHttp4sServerMetricsModule
+import fs2.{Pipe, Stream}
+import fs2.concurrent.Topic
 import io.circe.syntax._
 import org.http4s._
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
+import org.http4s.server.websocket._
+import org.http4s.websocket.WebSocketFrame
+import org.http4s.websocket.WebSocketFrame.Text
 import tracker.{Role, User, _}
 import tracker.Roles._
 import tracker.config.Configuration
 import tracker.security.{AuthJwtMiddleware, DefaultAccessTokenParser}
 import tracker.service.{FleetService, UserService, VehicleService}
-import zio.Task
+import zio.{Task, ZIO}
 import zio.interop.catz._
+import zio.interop.catz.implicits._
+import WebSocketMessage._
+
+import scala.concurrent.duration._
 
 class Http4sRoutingModule(
+    topic: Topic[Task, WebSocketMessage],
     userService: UserService,
     vehicleService: VehicleService,
     fleetService: FleetService,
@@ -63,6 +73,24 @@ class Http4sRoutingModule(
     case GET -> Root / "hello"            => helloWorldRoute
     case GET -> Root / "circuit-breaker"  => client.expect[String]("https://httpbin.org/status/500").flatMap(Ok(_))
     case request @ POST -> Root / "login" => handleLogin(request)
+    case GET -> Root / "ws" =>
+      val toClient: Stream[Task, WebSocketFrame] =
+        topic
+          .subscribe(100)
+          .map(msg => Text(msg.asJson.noSpaces))
+          .merge(Stream.awakeEvery[Task](5.seconds).map(_ => Text(heartbeat.asJson.noSpaces)))
+
+      val fromClient: Pipe[Task, WebSocketFrame, Unit] =
+        _.evalMap {
+          case Text(txt, _) =>
+            if (txt == "close")
+              topic.publish1(text("Some websocket client going down"))
+            else ZIO.unit
+          case _ => ZIO.unit
+        }
+
+      WebSocketBuilder[Task].build(toClient, fromClient)
+
   } <+> authMiddleware(authedRoutes)
 
   val router: HttpApp[Task] = Http4sRouting.make {

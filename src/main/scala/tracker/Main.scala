@@ -17,6 +17,7 @@ import com.avast.sst.monix.catnap.CircuitBreakerModule.{withLogging, withMetrics
 import com.avast.sst.monix.catnap.micrometer.MicrometerCircuitBreakerMetricsModule
 import com.avast.sst.pureconfig.PureConfigModule
 import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
+import fs2.concurrent.Topic
 import org.http4s.server.Server
 import tracker.config.Configuration
 import tracker.dao.{FleetDAO, UserDAO, VehicleDAO}
@@ -30,7 +31,6 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext
 
 object Main extends ZioServerApp {
-
   def program: Resource[Task, Server[Task]] = {
     for {
       configuration <- Resource.liftF(PureConfigModule.makeOrRaise[Task, Configuration])
@@ -71,12 +71,15 @@ object Main extends ZioServerApp {
       fleetService = FleetService(fleetDAO)
       vehicleService = VehicleService(vehicleDAO)
 
+      topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.text("initial text")))
+
       httpClient <- Http4sBlazeClientModule.make[Task](configuration.client, executorModule.executionContext)
       circuitBreakerMetrics <- Resource.liftF(MicrometerCircuitBreakerMetricsModule.make[Task]("test-http-client", meterRegistry))
       circuitBreaker <- Resource.liftF(CircuitBreakerModule[Task].make(configuration.circuitBreaker, clock))
       enrichedCircuitBreaker = withLogging("test-http-client", withMetrics(circuitBreakerMetrics, circuitBreaker))
       client = Http4sClientCircuitBreakerModule.make[Task](httpClient, enrichedCircuitBreaker)
       routingModule = new Http4sRoutingModule(
+        topic,
         userService,
         vehicleService,
         fleetService,

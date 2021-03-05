@@ -138,6 +138,6 @@ final case class Position(
 )
 
 object Position {
-  implicit val encoder: Encoder[User] = deriveEncoder
-  implicit val decoder: Decoder[User] = deriveDecoder
+  implicit val encoder: Encoder[Position] = deriveEncoder
+  implicit val decoder: Decoder[Position] = deriveDecoder
 }
