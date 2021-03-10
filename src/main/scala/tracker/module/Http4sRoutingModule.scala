@@ -17,7 +17,7 @@ import tracker.{Role, User, _}
 import tracker.Roles._
 import tracker.config.Configuration
 import tracker.security.{AuthJwtMiddleware, DefaultAccessTokenParser}
-import tracker.service.{FleetService, UserService, VehicleService}
+import tracker.service.{FleetService, PositionService, UserService, VehicleService}
 import zio.{Task, ZIO}
 import zio.interop.catz._
 import zio.interop.catz.implicits._
@@ -31,6 +31,7 @@ class Http4sRoutingModule(
     userService: UserService,
     vehicleService: VehicleService,
     fleetService: FleetService,
+    positionService: PositionService,
     client: Client[Task],
     serverMetricsModule: MicrometerHttp4sServerMetricsModule[Task],
     config: Configuration
@@ -67,6 +68,14 @@ class Http4sRoutingModule(
     case request @ GET -> Root / "fleet" / LongVar(id) as _ =>
       withRoles(Reader) {
         handleGetFleet(id)
+      }(request)
+    case request @ POST -> Root / "position" / "new" as _ =>
+      withRoles(Editor) {
+        handleNewPosition(request.req)
+      }(request)
+    case request @ POST -> Root / "vehicle" / "positions" as _ =>
+      withRoles(Reader) {
+        handleGetVehiclePositions(request.req)
       }(request)
   }
 
@@ -111,14 +120,14 @@ class Http4sRoutingModule(
     req
       .as[NewUserRequest]
       .flatMap(userService.persist)
-      .flatMap(_.fold(BadRequest(_), i => Ok(s"$i user successfully inserted.")))
+      .flatMap(Ok(_))
   }
 
   private def handleUpdateUser(req: Request[Task]): Task[Response[Task]] = {
     req
       .as[UpdateUserRequest]
       .flatMap(userService.persist)
-      .flatMap(_.fold(BadRequest(_), i => Ok(s"$i user successfully updated.")))
+      .flatMap(Ok(_))
   }
 
   private def handleGetVehicle(id: Long): Task[Response[Task]] = {
@@ -131,6 +140,20 @@ class Http4sRoutingModule(
 
   private def handleGetUser(id: Long): Task[Response[Task]] = {
     userService.getUserById(id).map(_.asJson).flatMap(Ok(_))
+  }
+
+  private def handleNewPosition(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[PositionRequest]
+      .flatMap(positionService.persist)
+      .flatMap(pos => topic.publish1(WebSocketMessage.position(pos)) >> Ok(pos))
+  }
+
+  private def handleGetVehiclePositions(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[VehiclePositionsRequest]
+      .flatMap(positionService.findByVehicle)
+      .flatMap(Ok(_))
   }
 
   private def withRoles(

@@ -20,9 +20,9 @@ import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
 import fs2.concurrent.Topic
 import org.http4s.server.Server
 import tracker.config.Configuration
-import tracker.dao.{FleetDAO, UserDAO, VehicleDAO}
+import tracker.dao.{FleetDAO, PositionDAO, UserDAO, VehicleDAO}
 import tracker.module.Http4sRoutingModule
-import tracker.service.{FleetService, UserService, VehicleService}
+import tracker.service.{FleetService, PositionService, UserService, VehicleService}
 import zio.Task
 import zio.interop.catz._
 import zio.interop.catz.implicits._
@@ -66,10 +66,12 @@ object Main extends ZioServerApp {
       userDAO = UserDAO(doobieTransactor)
       fleetDAO = FleetDAO(doobieTransactor)
       vehicleDAO = VehicleDAO(doobieTransactor)
+      positionDAO = PositionDAO(doobieTransactor)
 
       userService = UserService(userDAO, configuration.jwt)
       fleetService = FleetService(fleetDAO)
       vehicleService = VehicleService(vehicleDAO)
+      positionService = PositionService(positionDAO)
 
       topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.text("initial text")))
 
@@ -83,6 +85,7 @@ object Main extends ZioServerApp {
         userService,
         vehicleService,
         fleetService,
+        positionService,
         client,
         serverMetricsModule,
         configuration

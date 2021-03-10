@@ -129,12 +129,12 @@ object VehicleFleet {
 }
 
 final case class Position(
-    id: Long,
+    id: Option[Long],
     vehicleId: Long,
     speed: Double,
     latitude: Double,
     longitude: Double,
-    timestamp: ZonedDateTime
+    timestamp: ZonedDateTime = ZonedDateTime.now()
 )
 
 object Position {

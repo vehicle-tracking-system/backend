@@ -10,9 +10,9 @@ import zio.Task
 import zio.interop.catz._
 
 trait UserDAO {
-  def persist(user: User): Task[Int]
+  def persist(user: User): Task[User]
 
-  def update(user: User): Task[Int]
+  def update(user: User): Task[User]
 
   def find(id: Long): Task[Option[User]]
 
@@ -38,25 +38,32 @@ class DefaultUserDAO(transactor: Transactor[Task], logger: Logger = getLogger) e
       .transact(transactor)
   }
 
-  def persist(user: User): Task[Int] = {
-    Task {
-      logger.debug(s"Persisting user: ${user.username}")
-    } >> sql"""INSERT INTO USER
+  def persist(user: User): Task[User] = {
+    for {
+      id <-
+        sql"""INSERT INTO USER
          (name, created_at, deleted_at, password, username, roles) VALUES
-         (${user.name}, ${user.createdAt}, ${user.deletedAt}, ${user.password}, ${user.username}, ${user.roles.toList})""".update.run
-      .transact(transactor)
+         (${user.name}, ${user.createdAt}, ${user.deletedAt}, ${user.password}, ${user.username}, ${user.roles.toList})""".update
+          .withUniqueGeneratedKeys[Long]("id")
+          .transact(transactor)
+      user <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
+    } yield user
   }
 
-  def update(user: User): Task[Int] = {
-    Task {
-      logger.debug(s"Updating user: ${user.username}") //REPLACE INTO
-    } >> sql"""UPDATE USER SET
+  def update(user: User): Task[User] = {
+    for {
+      id <-
+        sql"""UPDATE USER SET
           name = ${user.name},
           created_at = ${user.createdAt},
           deleted_at = ${user.deletedAt},
           password = ${user.password},
           username = ${user.username},
-          roles = ${user.roles.toList} WHERE id = ${user.id}""".update.run.transact(transactor)
+          roles = ${user.roles.toList} WHERE id = ${user.id}""".update
+          .withUniqueGeneratedKeys[Long]("id")
+          .transact(transactor)
+      user <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
+    } yield user
   }
 }
 

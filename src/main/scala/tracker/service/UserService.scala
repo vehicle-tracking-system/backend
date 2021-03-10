@@ -33,26 +33,14 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig) {
       })
   }
 
-  def persist(userRequest: UserRequest): Task[Either[String, Int]] = {
+  def persist(userRequest: UserRequest): Task[User] = {
     userRequest.user.id match {
       case Some(_) =>
         userDAO
           .update(userRequest.user)
-          .map(i =>
-            if (i != 1) { Left("Saving new user failed") }
-            else {
-              Right(i)
-            }
-          )
       case None =>
         userDAO
           .persist(userRequest.user)
-          .map(i =>
-            if (i != 1) { Left("Updating user failed") }
-            else {
-              Right(i)
-            }
-          )
     }
   }
 }

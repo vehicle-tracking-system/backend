@@ -38,3 +38,25 @@ final case class UpdateUserRequest(override val user: User) extends UserRequest
 object UpdateUserRequest {
   implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder
 }
+
+final case class PositionRequest(position: Position)
+
+object PositionRequest {
+  implicit val decoder: Decoder[PositionRequest] = (c: HCursor) =>
+    for {
+      vehicleId <- c.downField("vehicleId").as[Long]
+      speed <- c.downField("speed").as[Double]
+      latitude <- c.downField("latitude").as[Double]
+      longitude <- c.downField("longitude").as[Double]
+    } yield {
+      new PositionRequest(
+        Position(None, vehicleId, speed, latitude, longitude)
+      )
+    }
+}
+
+final case class VehiclePositionsRequest(vehicleId: Long, page: Int = 1, pageSize: Int = 20)
+
+object VehiclePositionsRequest {
+  implicit val decoder: Decoder[VehiclePositionsRequest] = deriveDecoder
+}

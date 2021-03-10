@@ -22,10 +22,10 @@ class UserServiceTest extends AsyncFunSuite {
         users.find(u => u.username == username)
       }
 
-    override def persist(user: User): Task[Int] =
+    override def persist(user: User): Task[User] =
       throw new NotImplementedError("User persisting is not implemented for testing purposes.")
 
-    override def update(user: User): Task[Int] =
+    override def update(user: User): Task[User] =
       throw new NotImplementedError("User updating is not implemented for testing purposes.")
   }
 
