@@ -132,7 +132,7 @@ class Http4sRoutingModule(
   )(f: Task[Response[Task]])(request: AuthedRequest[Task, User]): Task[Response[Task]] = {
     val user = request.context
 
-    if (roles.toSet.subsetOf(user.roles)) {
+    if (roles.toSet.subsetOf(user.roles) || user.roles.contains(Admin)) {
       f
     } else {
       Forbidden()
