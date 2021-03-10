@@ -23,7 +23,7 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig) {
           Some(
             AccessTokenResponse(
               AccessTokenBuilder.createToken(
-                parse(s"""{"clientId":"${user.id}"}""")
+                parse(s"""{"clientId":"${user.id.get}"}""")
                   .getOrElse(throw new IllegalStateException("JWT token creating error")),
                 jwtConfig
               )
@@ -33,11 +33,26 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig) {
       })
   }
 
-  def persist(userRequest: UserRequest): Task[Int] = {
-    if (userRequest.user.id == -1) {
-      userDAO.persist(userRequest.user)
-    } else {
-      userDAO.update(userRequest.user)
+  def persist(userRequest: UserRequest): Task[Either[String, Int]] = {
+    userRequest.user.id match {
+      case Some(_) =>
+        userDAO
+          .update(userRequest.user)
+          .map(i =>
+            if (i != 1) { Left("Saving new user failed") }
+            else {
+              Right(i)
+            }
+          )
+      case None =>
+        userDAO
+          .persist(userRequest.user)
+          .map(i =>
+            if (i != 1) { Left("Updating user failed") }
+            else {
+              Right(i)
+            }
+          )
     }
   }
 }

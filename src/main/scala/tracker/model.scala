@@ -8,9 +8,9 @@ import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 
 final case class User(
-    id: Long,
+    id: Option[Long],
     name: String,
-    createdAt: ZonedDateTime,
+    createdAt: ZonedDateTime = ZonedDateTime.now(),
     deletedAt: Option[ZonedDateTime] = None,
     password: String,
     username: String,
@@ -22,7 +22,7 @@ object User {
   implicit val userDecoder: Decoder[User] = deriveDecoder
 
   implicit val userReade: Read[User] =
-    Read[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].map {
+    Read[(Option[Long], String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].map {
       case (id, name, createdAt, deletedAt, password, username, roles) =>
         new User(
           id,
@@ -40,7 +40,7 @@ object User {
     }
 
   implicit val userWrite: Write[User] =
-    Write[(Long, String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].contramap { user =>
+    Write[(Option[Long], String, ZonedDateTime, Option[ZonedDateTime], String, String, List[String])].contramap { user =>
       (
         user.id,
         user.name,

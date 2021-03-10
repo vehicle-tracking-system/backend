@@ -108,11 +108,17 @@ class Http4sRoutingModule(
   }
 
   private def handleNewUser(req: Request[Task]): Task[Response[Task]] = {
-    req.as[NewUserRequest].flatMap(userService.persist).flatMap(Ok(_))
+    req
+      .as[NewUserRequest]
+      .flatMap(userService.persist)
+      .flatMap(_.fold(BadRequest(_), i => Ok(s"$i user successfully inserted.")))
   }
 
   private def handleUpdateUser(req: Request[Task]): Task[Response[Task]] = {
-    req.as[UpdateUserRequest].flatMap(userService.persist).flatMap(Ok(_))
+    req
+      .as[UpdateUserRequest]
+      .flatMap(userService.persist)
+      .flatMap(_.fold(BadRequest(_), i => Ok(s"$i user successfully updated.")))
   }
 
   private def handleGetVehicle(id: Long): Task[Response[Task]] = {

@@ -14,7 +14,7 @@ class UserServiceTest extends AsyncFunSuite {
 
     override def find(id: Long): Task[Option[User]] =
       Task.effect {
-        users.find(u => u.id == id)
+        users.find(u => u.id.get == id)
       }
 
     override def findByUsername(username: String): Task[Option[User]] =
@@ -37,7 +37,7 @@ class UserServiceTest extends AsyncFunSuite {
 
   test("Parse User to JSON") {
     val user = User(
-      1,
+      Some(1),
       "Karel",
       ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")),
       None,
@@ -53,7 +53,7 @@ class UserServiceTest extends AsyncFunSuite {
 
   test("Parse deleted User to JSON") {
     val user = User(
-      1,
+      Some(1),
       "Karel",
       ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")),
       Some(ZonedDateTime.of(2222, 2, 25, 5, 0, 25, 0, ZoneId.of("Europe/Prague"))),
