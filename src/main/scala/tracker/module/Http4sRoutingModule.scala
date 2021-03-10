@@ -22,6 +22,7 @@ import zio.{Task, ZIO}
 import zio.interop.catz._
 import zio.interop.catz.implicits._
 import WebSocketMessage._
+import org.http4s.server.middleware._
 
 import scala.concurrent.duration._
 
@@ -95,7 +96,7 @@ class Http4sRoutingModule(
 
   val router: HttpApp[Task] = Http4sRouting.make {
     serverMetrics {
-      routes
+      CORS(routes)
     }
   }
 
