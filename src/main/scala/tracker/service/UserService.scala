@@ -18,29 +18,27 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig) {
   def login(loginRequest: LoginRequest): Task[Option[AccessTokenResponse]] = {
     userDAO
       .findByUsername(loginRequest.username)
-      .map(_.flatMap { user =>
-        if (PasswordUtility.checkPassword(loginRequest.password, user.password)) {
-          Some(
-            AccessTokenResponse(
-              AccessTokenBuilder.createToken(
-                parse(s"""{"clientId":"${user.id.get}"}""")
-                  .getOrElse(throw new IllegalStateException("JWT token creating error")),
-                jwtConfig
-              )
-            )
-          )
-        } else None
-      })
+      .map {
+        _.flatMap { user =>
+          if (PasswordUtility.checkPassword(loginRequest.password, user.password)) {
+            Some {
+              AccessTokenResponse {
+                AccessTokenBuilder.createToken(
+                  parse(s"""{"clientId":"${user.id.get}"}""")
+                    .getOrElse(throw new IllegalStateException("JWT token creating error")),
+                  jwtConfig
+                )
+              }
+            }
+          } else None
+        }
+      }
   }
 
   def persist(userRequest: UserRequest): Task[User] = {
     userRequest.user.id match {
-      case Some(_) =>
-        userDAO
-          .update(userRequest.user)
-      case None =>
-        userDAO
-          .persist(userRequest.user)
+      case Some(_) => userDAO.update(userRequest.user)
+      case None    => userDAO.persist(userRequest.user)
     }
   }
 }

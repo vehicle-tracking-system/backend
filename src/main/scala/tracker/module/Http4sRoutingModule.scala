@@ -77,6 +77,10 @@ class Http4sRoutingModule(
       withRoles(Reader) {
         handleGetVehiclePositions(request.req)
       }(request)
+    case request @ POST -> Root / "vehicle" / "history" as _ =>
+      withRoles(Reader) {
+        handleGetVehiclePositionHistory(request.req)
+      }(request)
   }
 
   private val routes = HttpRoutes.of[Task] {
@@ -153,6 +157,13 @@ class Http4sRoutingModule(
     req
       .as[VehiclePositionsRequest]
       .flatMap(positionService.findByVehicle)
+      .flatMap(Ok(_))
+  }
+
+  private def handleGetVehiclePositionHistory(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[VehiclePositionHistoryRequest]
+      .flatMap(positionService.findVehiclePositionHistory)
       .flatMap(Ok(_))
   }
 

@@ -60,3 +60,9 @@ final case class VehiclePositionsRequest(vehicleId: Long, page: Int = 1, pageSiz
 object VehiclePositionsRequest {
   implicit val decoder: Decoder[VehiclePositionsRequest] = deriveDecoder
 }
+
+final case class VehiclePositionHistoryRequest(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime = ZonedDateTime.now())
+
+object VehiclePositionHistoryRequest {
+  implicit val decoder: Decoder[VehiclePositionHistoryRequest] = deriveDecoder
+}

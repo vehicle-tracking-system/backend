@@ -8,6 +8,8 @@ import zio.Task
 import doobie.implicits.javatime._
 import doobie.util.fragment.Fragment
 
+import java.time.ZonedDateTime
+
 trait PositionDAO {
   def persist(position: Position): Task[Position]
 
@@ -16,6 +18,8 @@ trait PositionDAO {
   def find(id: Long): Task[Option[Position]]
 
   def findByVehicle(vehicleId: Long, offset: Int = 0, limit: Int = 20): Task[List[Position]]
+
+  def findVehicleHistory(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Position]]
 
 }
 
@@ -61,6 +65,10 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
 
   override def findByVehicle(vehicleId: Long, offset: Int = 0, limit: Int = 20): Task[List[Position]] = {
     findBy(fr"""WHERE VEHICLE_ID = ${vehicleId}""", offset, limit)
+  }
+
+  override def findVehicleHistory(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Position]] = {
+    findBy(fr"""WHERE VEHICLE_ID = ${vehicleId} AND TIMESTAMP >= $since AND TIMESTAMP <= $until""", 0, Int.MaxValue)
   }
 }
 
