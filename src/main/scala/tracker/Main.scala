@@ -63,6 +63,8 @@ object Main extends ZioServerApp {
             Some(hikariMetricsFactory)
           )
 
+//      loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
+
       userDAO = UserDAO(doobieTransactor)
       fleetDAO = FleetDAO(doobieTransactor)
       vehicleDAO = VehicleDAO(doobieTransactor)
@@ -73,7 +75,7 @@ object Main extends ZioServerApp {
       vehicleService = VehicleService(vehicleDAO)
       positionService = PositionService(positionDAO)
 
-      topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.text("initial text")))
+      topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.heartbeat))
 
       httpClient <- Http4sBlazeClientModule.make[Task](configuration.client, executorModule.executionContext)
       circuitBreakerMetrics <- Resource.liftF(MicrometerCircuitBreakerMetricsModule.make[Task]("test-http-client", meterRegistry))

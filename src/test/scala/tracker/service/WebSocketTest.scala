@@ -42,7 +42,7 @@ class WebSocketTest extends AnyFlatSpec {
       )
     assert(
       message.asJson.noSpacesSortKeys equals
-        """{"msgType":"POSITION","payload":"{\"id\":1,\"vehicleId\":2,\"speed\":52.51,\"latitude\":50.087823,\"longitude\":14.430026,\"timestamp\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\"}"}"""
+        """{"msgType":"POSITION","payload":"{\"id\":1,\"latitude\":50.087823,\"longitude\":14.430026,\"speed\":52.51,\"timestamp\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"vehicleId\":2}"}"""
     )
   }
 

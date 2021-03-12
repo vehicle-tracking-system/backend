@@ -15,6 +15,8 @@ resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
 
 lazy val commonSettings = BuildSettings.common ++ Seq(
   libraryDependencies ++= Seq(
+    Dependencies.slog4sAPI,
+    Dependencies.slog4s,
     Dependencies.pac4j,
     Dependencies.pac4jJwt,
     Dependencies.circeGeneric,

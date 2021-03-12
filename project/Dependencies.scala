@@ -1,6 +1,8 @@
 import sbt._
 
 object Dependencies {
+  val slog4sAPI = "com.avast" %% "slog4s-api" % Versions.slog4s
+  val slog4s = "com.avast" %% "slog4s-slf4j" % Versions.slog4s
   val pac4j = "org.pac4j" % "http4s-pac4j_2.13" % Versions.pac4j_http4s
   val pac4jJwt = "org.pac4j" % "pac4j-jwt" % Versions.pac4j
   val circeCore = "io.circe" %% "circe-core" % Versions.circe
@@ -45,6 +47,7 @@ object Dependencies {
     val circe = "0.13.0"
     val pac4j_http4s = "2.0.1"
     val pac4j = "4.3.1"
+    val slog4s = "0.6.0"
   }
 
 }
