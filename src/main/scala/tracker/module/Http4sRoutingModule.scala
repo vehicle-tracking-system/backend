@@ -53,6 +53,10 @@ class Http4sRoutingModule(
       withRoles(Admin) {
         handleGetUser(id)
       }(request)
+    case request @ POST -> Root / "vehicles" as _ =>
+      withRoles(Reader) {
+        handleGetVehicles(request.req)
+      }(request)
     case request @ GET -> Root / "vehicle" / LongVar(id) as _ =>
       withRoles(Reader) {
         handleGetVehicle(id)
@@ -111,11 +115,11 @@ class Http4sRoutingModule(
   }
 
   private def handleGetVehicle(id: Long): Task[Response[Task]] = {
-    vehicleService.find(id).map(_.asJson).flatMap(Ok(_))
+    vehicleService.get(id).map(_.asJson).flatMap(Ok(_))
   }
 
   private def handleGetFleet(id: Long): Task[Response[Task]] = {
-    fleetService.find(id).map(_.asJson).flatMap(Ok(_))
+    fleetService.get(id).map(_.asJson).flatMap(Ok(_))
   }
 
   private def handleGetUser(id: Long): Task[Response[Task]] = {
@@ -132,14 +136,21 @@ class Http4sRoutingModule(
   private def handleGetVehiclePositions(req: Request[Task]): Task[Response[Task]] = {
     req
       .as[VehiclePositionsRequest]
-      .flatMap(positionService.findByVehicle)
+      .flatMap(positionService.getByVehicle)
       .flatMap(Ok(_))
   }
 
   private def handleGetVehiclePositionHistory(req: Request[Task]): Task[Response[Task]] = {
     req
       .as[VehiclePositionHistoryRequest]
-      .flatMap(positionService.findVehiclePositionHistory)
+      .flatMap(positionService.getVehiclePositionHistory)
+      .flatMap(Ok(_))
+  }
+
+  private def handleGetVehicles(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[VehiclesRequest]
+      .flatMap(vehicleService.getAll)
       .flatMap(Ok(_))
   }
 

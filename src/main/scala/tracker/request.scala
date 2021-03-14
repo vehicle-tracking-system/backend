@@ -55,6 +55,12 @@ object PositionRequest {
     }
 }
 
+final case class VehiclesRequest(page: Int = 1, pageSize: Int)
+
+object VehiclesRequest {
+  implicit val decoder: Decoder[VehiclesRequest] = deriveDecoder
+}
+
 final case class VehiclePositionsRequest(vehicleId: Long, page: Int = 1, pageSize: Int = 20)
 
 object VehiclePositionsRequest {

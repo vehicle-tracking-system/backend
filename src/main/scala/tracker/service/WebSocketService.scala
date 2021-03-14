@@ -59,20 +59,20 @@ class WebSocketService(
           case Right(message) =>
             message match {
               case DefaultAuthenticatedSocketMessage(MessageType.Subscribe, jwt, payload) =>
-                val vehicle = for {
+                val vehicles = for {
                   _ <- logger.debug(s"New subscription for vehicle: $payload")
                   token <- IO.fromEither(jwt.toRight("Access token must be provided"))
                   _ <- IO.fromEither(DefaultAccessTokenParser.parseAccessToken(token, config.jwt.secret)).mapError(e => s"Invalid token $e")
                   id <- IO.fromEither(payload.toLongOption.toRight("Could not convert vehicle ID to number"))
-                  vehicleOpt <- vehicleService.find(id).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
-                  vehicle <- IO.fromEither(vehicleOpt.toRight("Vehicle not found"))
-                  _ <- subscribedVehicles.update(sv => sv + id)
-                } yield vehicle
+                  vehicleOpt <- vehicleService.get(id).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
+                  _ <- IO.fromEither(vehicleOpt.toRight("Vehicle not found"))
+                  vehicles <- subscribedVehicles.modify(sv => (sv + id, sv + id))
+                } yield vehicles
 
-                vehicle.either.flatMap {
+                vehicles.either.flatMap {
                   _.fold(
                     e => sessionTopic.publish1(error(e.toString)),
-                    v => sessionTopic.publish1(text(v.asJson.noSpacesSortKeys))
+                    v => vehicleService.getList(v).flatMap(a => sessionTopic.publish1(text(a.asJson.noSpacesSortKeys)))
                   )
                 }
               case _ => ZIO.unit
