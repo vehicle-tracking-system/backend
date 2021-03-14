@@ -19,6 +19,7 @@ import com.avast.sst.pureconfig.PureConfigModule
 import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
 import fs2.concurrent.Topic
 import org.http4s.server.Server
+import slog4s.slf4j.Slf4jFactory
 import tracker.config.Configuration
 import tracker.dao.{FleetDAO, PositionDAO, UserDAO, VehicleDAO}
 import tracker.module.Http4sRoutingModule
@@ -63,7 +64,7 @@ object Main extends ZioServerApp {
             Some(hikariMetricsFactory)
           )
 
-//      loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
+      loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
 
       userDAO = UserDAO(doobieTransactor)
       fleetDAO = FleetDAO(doobieTransactor)
@@ -88,6 +89,7 @@ object Main extends ZioServerApp {
         vehicleService,
         fleetService,
         positionService,
+        loggerFactory,
         client,
         serverMetricsModule,
         configuration

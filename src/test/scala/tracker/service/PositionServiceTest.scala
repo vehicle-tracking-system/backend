@@ -82,7 +82,7 @@ class PositionServiceTest extends AnyFlatSpec {
     val insertedPos = runtime.unsafeRun(mockedPositionService.persist(PositionRequest(newPosition1)))
     runtime.unsafeRun(mockedPositionService.persist(PositionRequest(newPosition2)))
     assert(
-      runtime.unsafeRun(mockedPositionService.find(insertedPos.id.get)).getOrElse(throw new Error) equals insertedPos
+      runtime.unsafeRun(mockedPositionService.get(insertedPos.id.get)).getOrElse(throw new Error) equals insertedPos
     )
   }
 

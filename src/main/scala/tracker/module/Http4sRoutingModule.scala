@@ -10,6 +10,7 @@ import org.http4s.circe.CirceEntityCodec._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.middleware._
+import slog4s.LoggerFactory
 import tracker.{Role, User, _}
 import tracker.Roles._
 import tracker.config.Configuration
@@ -24,6 +25,7 @@ class Http4sRoutingModule(
     vehicleService: VehicleService,
     fleetService: FleetService,
     positionService: PositionService,
+    loggerFactory: LoggerFactory[Task],
     client: Client[Task],
     serverMetricsModule: MicrometerHttp4sServerMetricsModule[Task],
     config: Configuration
@@ -83,7 +85,7 @@ class Http4sRoutingModule(
     case GET -> Root / "hello"            => helloWorldRoute
     case GET -> Root / "circuit-breaker"  => client.expect[String]("https://httpbin.org/status/500").flatMap(Ok(_))
     case request @ POST -> Root / "login" => handleLogin(request)
-    case GET -> Root / "ws"               => WebSocketService(topic, vehicleService, config).flatMap(_.build)
+    case GET -> Root / "ws"               => WebSocketService(loggerFactory, topic, vehicleService, config).flatMap(_.build)
 
   } <+> authMiddleware(authedRoutes)
 

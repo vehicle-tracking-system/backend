@@ -60,6 +60,15 @@ class DefaultVehicleDAO(transactor: Transactor[Task]) extends VehicleDAO {
       }
   }
 
+  override def findAll(offset: Int, limit: Int): Task[List[Vehicle]] = {
+    findBy(Fragment.empty, offset, limit)
+  }
+
+  override def findList(ids: List[Long]): Task[List[Vehicle]] = {
+    if (ids.isEmpty) Task(List.empty)
+    else findBy(Fragments.in(fr" WHERE V.ID", NonEmptyList.fromListUnsafe(ids)), 0, Int.MaxValue)
+  }
+
   private def mapToList(in: List[(LightVehicle, LightFleet)]): List[Vehicle] = in.groupBy(_._1).map(g => Vehicle(g._1, g._2.map(_._2))).toList
 
   private def findBy(fra: Fragment, offset: Int, limit: Int): Task[List[Vehicle]] = {
@@ -70,21 +79,6 @@ class DefaultVehicleDAO(transactor: Transactor[Task]) extends VehicleDAO {
       .to[List]
       .transact(transactor)
       .map(mapToList)
-  }
-
-  override def findAll(offset: Int, limit: Int): Task[List[Vehicle]] = {
-    findBy(Fragment.empty, offset, limit)
-  }
-
-  override def findList(ids: List[Long]): Task[List[Vehicle]] = {
-    if (ids.isEmpty) Task(List.empty)
-    else
-      (sql"""SELECT V.ID, V.NAME, F.ID, F.NAME FROM VEHICLE V INNER JOIN VEHICLEFLEET VF on V.ID = VF.VEHICLE_ID INNER JOIN FLEET F on VF.FLEET_ID = F.ID WHERE"""
-        ++ Fragments.in(fr" V.ID", NonEmptyList.fromListUnsafe(ids)))
-        .query[(LightVehicle, LightFleet)]
-        .to[List]
-        .transact(transactor)
-        .map(mapToList)
   }
 }
 

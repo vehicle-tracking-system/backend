@@ -5,7 +5,7 @@ import tracker.Fleet
 import zio.Task
 
 class FleetService(fleetDAO: FleetDAO) {
-  def find(id: Long): Task[Option[Fleet]] = fleetDAO.find(id)
+  def get(id: Long): Task[Option[Fleet]] = fleetDAO.find(id)
 }
 
 object FleetService {

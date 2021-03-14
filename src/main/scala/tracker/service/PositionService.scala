@@ -7,9 +7,9 @@ import zio.Task
 import java.time.temporal.ChronoUnit
 
 class PositionService(positionDAO: PositionDAO) {
-  def find(id: Long): Task[Option[Position]] = positionDAO.find(id)
+  def get(id: Long): Task[Option[Position]] = positionDAO.find(id)
 
-  def findByVehicle(request: VehiclePositionsRequest): Task[List[Position]] = {
+  def getByVehicle(request: VehiclePositionsRequest): Task[List[Position]] = {
     if (request.pageSize * request.page > 1000)
       Task { List.empty }
     else
@@ -23,7 +23,7 @@ class PositionService(positionDAO: PositionDAO) {
     }
   }
 
-  def findVehiclePositionHistory(request: VehiclePositionHistoryRequest): Task[List[Position]] = {
+  def getVehiclePositionHistory(request: VehiclePositionHistoryRequest): Task[List[Position]] = {
     if (ChronoUnit.DAYS.between(request.since, request.until) > 30)
       Task { List.empty }
     else

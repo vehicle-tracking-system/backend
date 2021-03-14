@@ -11,7 +11,6 @@ import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
 import org.http4s.Response
 import slog4s._
-import slog4s.slf4j._
 import tracker._
 import tracker.DefaultAuthenticatedSocketMessage._
 import tracker.config.Configuration
@@ -97,6 +96,7 @@ class WebSocketService(
 
 object WebSocketService {
   def apply(
+      loggerFactory: LoggerFactory[Task],
       topic: Topic[Task, WebSocketMessage],
       vehicleService: VehicleService,
       config: Configuration
@@ -104,6 +104,5 @@ object WebSocketService {
     for {
       sessionTopic <- Topic[Task, AuthenticatedWebSocketMessage](DefaultAuthenticatedSocketMessage.empty)
       subscribedVehicles <- Ref.of[Task, Set[Long]](Set.empty)
-      loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
     } yield new WebSocketService(loggerFactory.make("websocket-service"), subscribedVehicles, topic, sessionTopic, vehicleService, config)
 }
