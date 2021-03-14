@@ -44,7 +44,7 @@ class WebSocketService(
         case DefaultWebSocketMessage(MessageType.Position, pos) =>
           decode[Position](pos) match {
             case Right(position) => newPositionResponse(position).map(_.getOrElse(Text("")))
-            case _               => logger.warn("Position in topic cannot be decoded") >> Task(Text(""))
+            case _               => logger.warn("Position in topic cannot be decoded") >> Task(Text(internalError.asJson.noSpacesSortKeys))
           }
         case msg => Task(Text(msg.asJson.noSpaces))
       }
@@ -66,20 +66,18 @@ class WebSocketService(
                   id <- IO.fromEither(payload.toLongOption.toRight("Could not convert vehicle ID to number"))
                   vehicleOpt <- vehicleService.find(id).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
                   vehicle <- IO.fromEither(vehicleOpt.toRight("Vehicle not found"))
-                  vehicles <- subscribedVehicles.get
                   _ <- subscribedVehicles.update(sv => sv + id)
-                  _ <- sessionTopic.publish1(text(vehicles.toString))
                 } yield vehicle
 
                 vehicle.either.flatMap {
                   _.fold(
-                    e => sessionTopic.publish1(text(e.toString)),
+                    e => sessionTopic.publish1(error(e.toString)),
                     v => sessionTopic.publish1(text(v.asJson.noSpacesSortKeys))
                   )
                 }
               case _ => ZIO.unit
             }
-          case Left(e) => sessionTopic.publish1(text(e.toString))
+          case Left(e) => sessionTopic.publish1(error(e.toString))
         }
       case _ => ZIO.unit
     }
