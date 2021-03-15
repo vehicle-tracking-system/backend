@@ -162,7 +162,7 @@ class Http4sRoutingModule(
     req
       .as[VehiclesRequest]
       .flatMap(vehicleService.getAll)
-      .flatMap(Ok(_))
+      .flatMap(p => Ok(p.asJson.noSpacesSortKeys))
   }
 
   private def withRoles(

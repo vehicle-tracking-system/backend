@@ -21,6 +21,8 @@ trait VehicleDAO {
   def findAll(offset: Int, limit: Int): Task[List[Vehicle]]
 
   def findList(ids: List[Long]): Task[List[Vehicle]]
+
+  def count(): Task[Int]
 }
 
 class DefaultVehicleDAO(transactor: Transactor[Task]) extends VehicleDAO {
@@ -69,12 +71,18 @@ class DefaultVehicleDAO(transactor: Transactor[Task]) extends VehicleDAO {
     else findBy(Fragments.in(fr" WHERE V.ID", NonEmptyList.fromListUnsafe(ids)), 0, Int.MaxValue)
   }
 
+  def count(): Task[Int] = {
+    sql"""SELECT COUNT(*) FROM VEHICLE"""
+      .query[Int]
+      .unique
+      .transact(transactor)
+  }
+
   private def mapToList(in: List[(LightVehicle, LightFleet)]): List[Vehicle] = in.groupBy(_._1).map(g => Vehicle(g._1, g._2.map(_._2))).toList
 
   private def findBy(fra: Fragment, offset: Int, limit: Int): Task[List[Vehicle]] = {
-    (sql"""SELECT V.ID, V.NAME, F.ID, F.NAME FROM VEHICLE V INNER JOIN VEHICLEFLEET VF on V.ID = VF.VEHICLE_ID INNER JOIN FLEET F on VF.FLEET_ID = F.ID"""
-      ++ fra
-      ++ sql""" ORDER BY V.NAME DESC LIMIT $limit OFFSET $offset""")
+    (sql"""SELECT V.ID, V.NAME, F.ID, F.NAME FROM (SELECT ID, NAME FROM VEHICLE ORDER BY NAME DESC LIMIT $limit OFFSET $offset) V INNER JOIN VEHICLEFLEET VF on V.ID = VF.VEHICLE_ID INNER JOIN FLEET F on VF.FLEET_ID = F.ID"""
+      ++ fra)
       .query[(LightVehicle, LightFleet)]
       .to[List]
       .transact(transactor)

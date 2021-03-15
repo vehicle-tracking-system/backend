@@ -4,7 +4,9 @@ import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import zio.Task
 
-abstract class Pagination[A] {
+import scala.math.max
+
+trait Pagination[A] {
   def getPage(number: Int, size: Int): Task[Page[A]]
 }
 
@@ -19,11 +21,11 @@ class DefaultPagination[A](find: (Int, Int) => Task[List[A]], count: () => Task[
     for {
       list <- find((number - 1) * size, size)
       count <- count()
-    } yield new Page[A](number, if (count / size == 0) 1 else count / size, size, list)
+    } yield new Page[A](number, max(count / size, 1), size, list)
 }
 
 object DefaultPagination {
-  implicit def apply(f: (Offset, Size) => Task[List[Vehicle]], count: () => Task[Int]): DefaultPagination[Vehicle] =
+  def apply(f: (Offset, Size) => Task[List[Vehicle]], count: () => Task[Int]): Pagination[Vehicle] =
     new DefaultPagination[Vehicle](f, count)
 
   type Offset = Int
