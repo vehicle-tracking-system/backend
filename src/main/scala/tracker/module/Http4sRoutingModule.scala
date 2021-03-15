@@ -117,15 +117,24 @@ class Http4sRoutingModule(
   }
 
   private def handleGetVehicle(id: Long): Task[Response[Task]] = {
-    vehicleService.get(id).map(_.asJson).flatMap(Ok(_))
+    vehicleService.get(id).flatMap {
+      case Some(vehicle) => Ok(vehicle.asJson.noSpacesSortKeys)
+      case None          => NotFound("Vehicle not found")
+    }
   }
 
   private def handleGetFleet(id: Long): Task[Response[Task]] = {
-    fleetService.get(id).map(_.asJson).flatMap(Ok(_))
+    fleetService.get(id).flatMap {
+      case Some(fleet) => Ok(fleet.asJson.noSpacesSortKeys)
+      case None        => NotFound("Fleet not found")
+    }
   }
 
   private def handleGetUser(id: Long): Task[Response[Task]] = {
-    userService.getUserById(id).map(_.asJson).flatMap(Ok(_))
+    userService.getUserById(id).flatMap {
+      case Some(user) => Ok(user.asJson.noSpacesSortKeys)
+      case None       => NotFound("User not found")
+    }
   }
 
   private def handleNewPosition(req: Request[Task]): Task[Response[Task]] = {

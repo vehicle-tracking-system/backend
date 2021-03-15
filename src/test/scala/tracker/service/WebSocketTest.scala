@@ -11,15 +11,15 @@ class WebSocketTest extends AnyFlatSpec {
 
   "Heartbeat message" should "be serializable to JSON" in {
     val message: WebSocketMessage = WebSocketMessage.heartbeat
-    assert(message.asJson.noSpacesSortKeys == """{"msgType":"HEARTBEAT","payload":""}""")
+    assert(message.asJson.noSpacesSortKeys == """{"msgType":"HEARTBEAT","payload":"","token":null}""")
   }
 
   "Text message" should "be serializable to JSON" in {
     val message: WebSocketMessage = WebSocketMessage.text("This is t e  x t for testING!")
-    assert(message.asJson.noSpacesSortKeys == """{"msgType":"TEXT","payload":"This is t e  x t for testING!"}""")
+    assert(message.asJson.noSpacesSortKeys == """{"msgType":"TEXT","payload":"This is t e  x t for testING!","token":null}""")
   }
   it should "be parsable from String" in {
-    val messageString: String = """{"msgType":"TEXT","payload":"This is t e  x t for testING!"}"""
+    val messageString: String = """{"msgType":"TEXT","payload":"This is t e  x t for testING!","token":null}"""
     decode[WebSocketMessage](messageString) match {
       case Right(msg) =>
         assert(msg.msgType equals MessageType.Text)
@@ -42,7 +42,7 @@ class WebSocketTest extends AnyFlatSpec {
       )
     assert(
       message.asJson.noSpacesSortKeys equals
-        """{"msgType":"POSITION","payload":"{\"id\":1,\"latitude\":50.087823,\"longitude\":14.430026,\"speed\":52.51,\"timestamp\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"vehicleId\":2}"}"""
+        """{"msgType":"POSITION","payload":"{\"id\":1,\"latitude\":50.087823,\"longitude\":14.430026,\"speed\":52.51,\"timestamp\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"vehicleId\":2}","token":null}"""
     )
   }
 

@@ -12,10 +12,9 @@ import org.http4s.websocket.WebSocketFrame.Text
 import org.http4s.Response
 import slog4s._
 import tracker._
-import tracker.DefaultAuthenticatedSocketMessage._
 import tracker.config.Configuration
 import tracker.security.DefaultAccessTokenParser
-import tracker.WebSocketMessage.heartbeat
+import tracker.WebSocketMessage._
 import zio.{IO, Task, ZIO}
 import zio.interop.catz.implicits._
 import zio.interop.catz.taskConcurrentInstance
@@ -26,7 +25,7 @@ class WebSocketService(
     logger: Logger[Task],
     subscribedVehicles: Ref[Task, Set[Long]],
     topic: Topic[Task, WebSocketMessage],
-    sessionTopic: Topic[Task, AuthenticatedWebSocketMessage],
+    sessionTopic: Topic[Task, WebSocketMessage],
     vehicleService: VehicleService,
     config: Configuration
 ) {
@@ -40,7 +39,7 @@ class WebSocketService(
     topic
       .subscribe(100)
       .evalMap {
-        case DefaultWebSocketMessage(MessageType.Position, pos) =>
+        case DefaultWebSocketMessage(MessageType.Position, _, pos) =>
           decode[Position](pos) match {
             case Right(position) => newPositionResponse(position).map(_.getOrElse(Text("")))
             case _               => logger.warn("Position in topic cannot be decoded") >> Task(Text(internalError.asJson.noSpacesSortKeys))
@@ -54,10 +53,10 @@ class WebSocketService(
   private val fromClient: Pipe[Task, WebSocketFrame, Unit] =
     _.evalMap {
       case Text(txt, _) =>
-        decode[DefaultAuthenticatedSocketMessage](txt) match {
+        decode[DefaultWebSocketMessage](txt) match {
           case Right(message) =>
             message match {
-              case DefaultAuthenticatedSocketMessage(MessageType.Subscribe, jwt, payload) =>
+              case DefaultWebSocketMessage(MessageType.Subscribe, jwt, payload) =>
                 val vehicles = for {
                   _ <- logger.debug(s"New subscription for vehicle: $payload")
                   token <- IO.fromEither(jwt.toRight("Access token must be provided"))
@@ -102,7 +101,7 @@ object WebSocketService {
       config: Configuration
   ): Task[WebSocketService] =
     for {
-      sessionTopic <- Topic[Task, AuthenticatedWebSocketMessage](DefaultAuthenticatedSocketMessage.empty)
+      sessionTopic <- Topic[Task, WebSocketMessage](empty)
       subscribedVehicles <- Ref.of[Task, Set[Long]](Set.empty)
     } yield new WebSocketService(loggerFactory.make("websocket-service"), subscribedVehicles, topic, sessionTopic, vehicleService, config)
 }

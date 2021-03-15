@@ -46,6 +46,7 @@ object MessageType {
 
 sealed trait WebSocketMessage {
   def msgType: MessageType
+  def token: Option[String]
   def payload: String
 }
 
@@ -55,46 +56,20 @@ object WebSocketMessage {
   implicit val decoder: Decoder[WebSocketMessage] = DefaultWebSocketMessage.decoder.map(identity)
   implicit val encoder: Encoder[WebSocketMessage] =
     DefaultWebSocketMessage.encoder.contramap(_.asInstanceOf[DefaultWebSocketMessage])
-  val heartbeat: WebSocketMessage = new DefaultWebSocketMessage(Heartbeat, "")
+
+  val empty: WebSocketMessage = new DefaultWebSocketMessage(Empty, None, "")
+  val heartbeat: WebSocketMessage = new DefaultWebSocketMessage(Heartbeat, None, "")
   val internalError: WebSocketMessage = error("Internal server error")
-  def text(text: String): WebSocketMessage = new DefaultWebSocketMessage(Text, text)
-  def error(text: String): WebSocketMessage = new DefaultWebSocketMessage(Error, text)
-  def position(position: Position): WebSocketMessage = new DefaultWebSocketMessage(Position, position.asJson.noSpacesSortKeys)
+  def text(text: String): WebSocketMessage = new DefaultWebSocketMessage(Text, None, text)
+  def error(text: String): WebSocketMessage = new DefaultWebSocketMessage(Error, None, text)
+  def position(position: Position): WebSocketMessage = new DefaultWebSocketMessage(Position, None, position.asJson.noSpacesSortKeys)
+  def vehicle(vehicles: List[Vehicle], token: Option[String] = None): WebSocketMessage =
+    new DefaultWebSocketMessage(Vehicle, token, vehicles.asJson.noSpacesSortKeys)
 }
 
-private case class DefaultWebSocketMessage(msgType: MessageType, payload: String) extends WebSocketMessage
+private case class DefaultWebSocketMessage(msgType: MessageType, token: Option[String], payload: String) extends WebSocketMessage
 
 private object DefaultWebSocketMessage {
   implicit val decoder: Decoder[DefaultWebSocketMessage] = deriveDecoder
   implicit val encoder: Encoder[DefaultWebSocketMessage] = deriveEncoder
-}
-
-sealed trait AuthenticatedWebSocketMessage extends WebSocketMessage {
-  def token: Option[String]
-}
-
-object AuthenticatedWebSocketMessage {
-  implicit val decoder: Decoder[AuthenticatedWebSocketMessage] =
-    DefaultAuthenticatedSocketMessage.decoder.map(identity)
-  implicit val encoder: Encoder[AuthenticatedWebSocketMessage] =
-    DefaultAuthenticatedSocketMessage.encoder.contramap(_.asInstanceOf[DefaultAuthenticatedSocketMessage])
-}
-
-private case class DefaultAuthenticatedSocketMessage(msgType: MessageType, token: Option[String], payload: String)
-    extends AuthenticatedWebSocketMessage
-
-private object DefaultAuthenticatedSocketMessage {
-  import tracker.MessageType._
-
-  implicit val decoder: Decoder[DefaultAuthenticatedSocketMessage] = deriveDecoder
-  implicit val encoder: Encoder[DefaultAuthenticatedSocketMessage] = deriveEncoder
-
-  val empty: AuthenticatedWebSocketMessage = new DefaultAuthenticatedSocketMessage(Empty, None, "")
-  val internalError: AuthenticatedWebSocketMessage = error("Internal server error")
-  def text(text: String, token: Option[String] = None): AuthenticatedWebSocketMessage = new DefaultAuthenticatedSocketMessage(Text, token, text)
-  def vehicle(vehicles: List[Vehicle], token: Option[String] = None): AuthenticatedWebSocketMessage =
-    new DefaultAuthenticatedSocketMessage(Vehicle, token, vehicles.asJson.noSpacesSortKeys)
-  def error(text: String): AuthenticatedWebSocketMessage = new DefaultAuthenticatedSocketMessage(Error, None, text)
-  def position(position: Position, token: Option[String] = None): AuthenticatedWebSocketMessage =
-    new DefaultAuthenticatedSocketMessage(Position, token, position.asJson.noSpacesSortKeys)
 }
