@@ -15,20 +15,21 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig) {
     userDAO.find(id)
   }
 
-  def login(loginRequest: LoginRequest): Task[Option[AccessTokenResponse]] = {
+  def login(loginRequest: LoginRequest): Task[Option[LoginResponse]] = {
     userDAO
       .findByUsername(loginRequest.username)
       .map {
         _.flatMap { user =>
           if (PasswordUtility.checkPassword(loginRequest.password, user.password)) {
             Some {
-              AccessTokenResponse {
+              LoginResponse(
                 AccessTokenBuilder.createToken(
                   parse(s"""{"clientId":"${user.id.get}"}""")
                     .getOrElse(throw new IllegalStateException("JWT token creating error")),
                   jwtConfig
-                )
-              }
+                ),
+                user
+              )
             }
           } else None
         }
