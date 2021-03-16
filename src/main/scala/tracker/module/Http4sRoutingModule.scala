@@ -85,7 +85,7 @@ class Http4sRoutingModule(
     case GET -> Root / "hello"            => helloWorldRoute
     case GET -> Root / "circuit-breaker"  => client.expect[String]("https://httpbin.org/status/500").flatMap(Ok(_))
     case request @ POST -> Root / "login" => handleLogin(request)
-    case GET -> Root / "ws"               => WebSocketService(loggerFactory, topic, vehicleService, config).flatMap(_.build)
+    case GET -> Root / "ws"               => WebSocketService(loggerFactory, DefaultAccessTokenParser, topic, vehicleService, config).flatMap(_.build)
 
   } <+> authMiddleware(authedRoutes)
 

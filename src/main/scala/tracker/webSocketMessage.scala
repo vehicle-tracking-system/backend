@@ -11,7 +11,8 @@ object MessageType {
   case object Heartbeat extends MessageType
   case object Text extends MessageType
   case object Position extends MessageType
-  case object Subscribe extends MessageType
+  case object SubscribePositions extends MessageType
+  case object UnsubscribePositions extends MessageType
   case object Error extends MessageType
   case object Vehicle extends MessageType
 
@@ -20,26 +21,28 @@ object MessageType {
 
   def fromString(name: String): Either[String, MessageType] = {
     name match {
-      case "EMPTY"     => Right(Empty)
-      case "HEARTBEAT" => Right(Heartbeat)
-      case "TEXT"      => Right(Text)
-      case "POSITION"  => Right(Position)
-      case "SUBSCRIBE" => Right(Subscribe)
-      case "ERROR"     => Right(Error)
-      case "VEHICLE"   => Right(Vehicle)
-      case _           => Left(s"Non existing message type: $name")
+      case "EMPTY"                 => Right(Empty)
+      case "HEARTBEAT"             => Right(Heartbeat)
+      case "TEXT"                  => Right(Text)
+      case "POSITION"              => Right(Position)
+      case "SUBSCRIBE_POSITIONS"   => Right(SubscribePositions)
+      case "UNSUBSCRIBE_POSITIONS" => Right(UnsubscribePositions)
+      case "ERROR"                 => Right(Error)
+      case "VEHICLE"               => Right(Vehicle)
+      case _                       => Left(s"Non existing message type: $name")
     }
   }
 
   def toString(msgType: MessageType): String = {
     msgType match {
-      case Empty     => "EMPTY"
-      case Heartbeat => "HEARTBEAT"
-      case Text      => "TEXT"
-      case Position  => "POSITION"
-      case Subscribe => "SUBSCRIBE"
-      case Error     => "ERROR"
-      case Vehicle   => "VEHICLE"
+      case Empty                => "EMPTY"
+      case Heartbeat            => "HEARTBEAT"
+      case Text                 => "TEXT"
+      case Position             => "POSITION"
+      case SubscribePositions   => "SUBSCRIBE_POSITIONS"
+      case UnsubscribePositions => "UNSUBSCRIBE_POSITIONS"
+      case Error                => "ERROR"
+      case Vehicle              => "VEHICLE"
     }
   }
 }

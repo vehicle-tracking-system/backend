@@ -13,7 +13,7 @@ import org.http4s.Response
 import slog4s._
 import tracker._
 import tracker.config.Configuration
-import tracker.security.DefaultAccessTokenParser
+import tracker.security.AccessTokenParser
 import tracker.WebSocketMessage._
 import zio.{IO, Task, ZIO}
 import zio.interop.catz.implicits._
@@ -27,6 +27,7 @@ class WebSocketService(
     topic: Topic[Task, WebSocketMessage],
     sessionTopic: Topic[Task, WebSocketMessage],
     vehicleService: VehicleService,
+    tokenParser: AccessTokenParser,
     config: Configuration
 ) {
 
@@ -56,15 +57,31 @@ class WebSocketService(
         decode[DefaultWebSocketMessage](txt) match {
           case Right(message) =>
             message match {
-              case DefaultWebSocketMessage(MessageType.Subscribe, jwt, payload) =>
+              case DefaultWebSocketMessage(MessageType.SubscribePositions, jwt, payload) =>
                 val vehicles = for {
-                  _ <- logger.debug(s"New subscription for vehicle: $payload")
-                  token <- IO.fromEither(jwt.toRight("Access token must be provided"))
-                  _ <- IO.fromEither(DefaultAccessTokenParser.parseAccessToken(token, config.jwt.secret)).mapError(e => s"Invalid token $e")
+                  stringToken <- IO.fromEither(jwt.toRight("Access token must be provided"))
+                  token <- IO.fromEither(tokenParser.parseAccessToken(stringToken, config.jwt.secret)).mapError(e => s"Invalid token $e")
                   id <- IO.fromEither(payload.toLongOption.toRight("Could not convert vehicle ID to number"))
                   vehicleOpt <- vehicleService.get(id).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
                   _ <- IO.fromEither(vehicleOpt.toRight("Vehicle not found"))
+                  _ <- logger.debug(s"New subscription for vehicle: $payload from user ${token.clientId} with roles ${token.clientRoles}")
                   vehicles <- subscribedVehicles.modify(sv => (sv + id, sv + id))
+                } yield vehicles
+
+                vehicles.either.flatMap {
+                  _.fold(
+                    e => sessionTopic.publish1(error(e.toString)),
+                    v => vehicleService.getList(v).flatMap(a => sessionTopic.publish1(text(a.asJson.noSpacesSortKeys)))
+                  )
+                }
+
+              case DefaultWebSocketMessage(MessageType.UnsubscribePositions, jwt, payload) =>
+                val vehicles = for {
+                  stringToken <- IO.fromEither(jwt.toRight("Access token must be provided"))
+                  token <- IO.fromEither(tokenParser.parseAccessToken(stringToken, config.jwt.secret)).mapError(e => s"Invalid token $e")
+                  id <- IO.fromEither(payload.toLongOption.toRight("Could not convert vehicle ID to number"))
+                  _ <- logger.debug(s"Unsubscribing vehicle: $payload from user ${token.clientId} with roles ${token.clientRoles}")
+                  vehicles <- subscribedVehicles.modify(sv => (sv - id, sv - id))
                 } yield vehicles
 
                 vehicles.either.flatMap {
@@ -96,6 +113,7 @@ class WebSocketService(
 object WebSocketService {
   def apply(
       loggerFactory: LoggerFactory[Task],
+      tokenParser: AccessTokenParser,
       topic: Topic[Task, WebSocketMessage],
       vehicleService: VehicleService,
       config: Configuration
@@ -103,5 +121,13 @@ object WebSocketService {
     for {
       sessionTopic <- Topic[Task, WebSocketMessage](empty)
       subscribedVehicles <- Ref.of[Task, Set[Long]](Set.empty)
-    } yield new WebSocketService(loggerFactory.make("websocket-service"), subscribedVehicles, topic, sessionTopic, vehicleService, config)
+    } yield new WebSocketService(
+      loggerFactory.make("websocket-service"),
+      subscribedVehicles,
+      topic,
+      sessionTopic,
+      vehicleService,
+      tokenParser,
+      config
+    )
 }
