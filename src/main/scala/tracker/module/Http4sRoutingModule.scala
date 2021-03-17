@@ -75,6 +75,10 @@ class Http4sRoutingModule(
       withRoles(Reader) {
         handleGetVehiclePositions(request.req)
       }(request)
+    case request @ GET -> Root / "vehicle" / LongVar(id) / "position" as _ =>
+      withRoles(Reader) {
+        handleGetLastVehiclePosition(id)
+      }(request)
     case request @ POST -> Root / "vehicle" / "history" as _ =>
       withRoles(Reader) {
         handleGetVehiclePositionHistory(request.req)
@@ -165,6 +169,12 @@ class Http4sRoutingModule(
       .flatMap(p => Ok(p.asJson.noSpacesSortKeys))
   }
 
+  private def handleGetLastVehiclePosition(vehicleId: Long): Task[Response[Task]] = {
+    positionService.getLastVehiclePosition(vehicleId).flatMap {
+      case Some(position) => Ok(position.asJson.noSpacesSortKeys)
+      case None           => NotFound("Vehicle not found")
+    }
+  }
   private def withRoles(
       roles: Role*
   )(f: Task[Response[Task]])(request: AuthedRequest[Task, User]): Task[Response[Task]] = {

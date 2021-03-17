@@ -29,6 +29,10 @@ class PositionService(positionDAO: PositionDAO) {
     else
       positionDAO.findVehicleHistory(request.vehicleId, request.since, request.until)
   }
+
+  def getLastVehiclePosition(vehicleId: Long): Task[Option[Position]] = {
+    positionDAO.findLastVehiclePosition(vehicleId)
+  }
 }
 
 object PositionService {

@@ -44,6 +44,8 @@ class PositionServiceTest extends AnyFlatSpec {
 
     override def findVehicleHistory(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Position]] =
       throw new NotImplementedError()
+
+    override def findLastVehiclePosition(vehicleId: Long): Task[Option[Position]] = throw new NotImplementedError()
   }
 
   val positionDAO: PositionDAOTest = new PositionDAOTest(List.empty)

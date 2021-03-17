@@ -21,6 +21,7 @@ trait PositionDAO {
 
   def findVehicleHistory(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Position]]
 
+  def findLastVehiclePosition(vehicleId: Long): Task[Option[Position]]
 }
 
 class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
@@ -54,6 +55,22 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
       .transact(transactor)
   }
 
+  override def findByVehicle(vehicleId: Long, offset: Int = 0, limit: Int = 20): Task[List[Position]] = {
+    findBy(fr"""WHERE VEHICLE_ID = ${vehicleId}""", offset, limit)
+  }
+
+  override def findVehicleHistory(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Position]] = {
+    findBy(fr"""WHERE VEHICLE_ID = ${vehicleId} AND TIMESTAMP >= $since AND TIMESTAMP <= $until""", 0, Int.MaxValue)
+  }
+
+  override def findLastVehiclePosition(vehicleId: Long): Task[Option[Position]] = {
+    findBy(fr"""WHERE VEHICLE_ID = ${vehicleId}""", 0, 1).map {
+      case List() => None
+      case a      => Some(a.head)
+    }
+
+  }
+
   private def findBy(fra: Fragment, offset: Int, limit: Int): Task[List[Position]] = {
     (sql"""SELECT ID, VEHICLE_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP FROM POSITION """
       ++ fra
@@ -61,14 +78,6 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
       .query[Position]
       .to[List]
       .transact(transactor)
-  }
-
-  override def findByVehicle(vehicleId: Long, offset: Int = 0, limit: Int = 20): Task[List[Position]] = {
-    findBy(fr"""WHERE VEHICLE_ID = ${vehicleId}""", offset, limit)
-  }
-
-  override def findVehicleHistory(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Position]] = {
-    findBy(fr"""WHERE VEHICLE_ID = ${vehicleId} AND TIMESTAMP >= $since AND TIMESTAMP <= $until""", 0, Int.MaxValue)
   }
 }
 
