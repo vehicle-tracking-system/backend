@@ -74,7 +74,7 @@ object Main extends ZioServerApp {
       userService = UserService(userDAO, configuration.jwt)
       fleetService = FleetService(fleetDAO)
       vehicleService = VehicleService(vehicleDAO)
-      positionService = PositionService(positionDAO)
+      positionService = PositionService(positionDAO, loggerFactory)
 
       topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.heartbeat))
 

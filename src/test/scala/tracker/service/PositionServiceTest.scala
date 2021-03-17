@@ -2,9 +2,11 @@ package tracker.service
 
 import io.circe.syntax.EncoderOps
 import org.scalatest.flatspec.AnyFlatSpec
+import slog4s.slf4j.Slf4jFactory
 import tracker.{Position, PositionRequest}
 import tracker.dao.PositionDAO
 import zio.{Task, _}
+import zio.interop.catz._
 
 import java.time.{ZoneId, ZonedDateTime}
 
@@ -49,7 +51,7 @@ class PositionServiceTest extends AnyFlatSpec {
   }
 
   val positionDAO: PositionDAOTest = new PositionDAOTest(List.empty)
-  val mockedPositionService: PositionService = PositionService(positionDAO)
+  val mockedPositionService: PositionService = PositionService(positionDAO, Slf4jFactory[Task].withoutContext.loggerFactory)
 
   val runtime: Runtime[zio.ZEnv] = Runtime.default
 
