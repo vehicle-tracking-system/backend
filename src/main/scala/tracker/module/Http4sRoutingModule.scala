@@ -25,6 +25,7 @@ class Http4sRoutingModule(
     vehicleService: VehicleService,
     fleetService: FleetService,
     positionService: PositionService,
+    trackService: TrackService,
     loggerFactory: LoggerFactory[Task],
     client: Client[Task],
     serverMetricsModule: MicrometerHttp4sServerMetricsModule[Task],
@@ -82,6 +83,10 @@ class Http4sRoutingModule(
     case request @ POST -> Root / "vehicle" / "history" as _ =>
       withRoles(Reader) {
         handleGetVehiclePositionHistory(request.req)
+      }(request)
+    case request @ POST -> Root / "tracks" as _ =>
+      withRoles(Reader) {
+        handleGetAllTracks(request.req)
       }(request)
   }
 
@@ -175,6 +180,14 @@ class Http4sRoutingModule(
       case None           => NotFound("Vehicle not found")
     }
   }
+
+  private def handleGetAllTracks(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[PageRequest]
+      .flatMap(trackService.getAll)
+      .flatMap(t => Ok(t.asJson.noSpacesSortKeys))
+  }
+
   private def withRoles(
       roles: Role*
   )(f: Task[Response[Task]])(request: AuthedRequest[Task, User]): Task[Response[Task]] = {

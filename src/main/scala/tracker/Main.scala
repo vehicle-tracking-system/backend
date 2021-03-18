@@ -21,9 +21,9 @@ import fs2.concurrent.Topic
 import org.http4s.server.Server
 import slog4s.slf4j.Slf4jFactory
 import tracker.config.Configuration
-import tracker.dao.{FleetDAO, PositionDAO, UserDAO, VehicleDAO}
+import tracker.dao.{FleetDAO, PositionDAO, TrackDAO, UserDAO, VehicleDAO}
 import tracker.module.Http4sRoutingModule
-import tracker.service.{FleetService, PositionService, UserService, VehicleService}
+import tracker.service.{FleetService, PositionService, TrackService, UserService, VehicleService}
 import zio.Task
 import zio.interop.catz._
 import zio.interop.catz.implicits._
@@ -70,11 +70,13 @@ object Main extends ZioServerApp {
       fleetDAO = FleetDAO(doobieTransactor)
       vehicleDAO = VehicleDAO(doobieTransactor)
       positionDAO = PositionDAO(doobieTransactor)
+      trackDAO = TrackDAO(doobieTransactor)
 
       userService = UserService(userDAO, configuration.jwt)
       fleetService = FleetService(fleetDAO)
       vehicleService = VehicleService(vehicleDAO)
       positionService = PositionService(positionDAO, loggerFactory)
+      trackService = TrackService(trackDAO)
 
       topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.heartbeat))
 
@@ -89,6 +91,7 @@ object Main extends ZioServerApp {
         vehicleService,
         fleetService,
         positionService,
+        trackService,
         loggerFactory,
         client,
         serverMetricsModule,

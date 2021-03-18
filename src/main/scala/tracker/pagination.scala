@@ -26,7 +26,7 @@ class DefaultPagination[A](find: (Int, Int) => Task[List[A]], count: () => Task[
 }
 
 object DefaultPagination {
-  implicit def apply[A](f: (Offset, Size) => Task[List[A]], count: () => Task[Int]): Pagination[A] =
+  def apply[A](f: (Offset, Size) => Task[List[A]], count: () => Task[Int]): Pagination[A] =
     new DefaultPagination[A](f, count)
 
   type Offset = Int

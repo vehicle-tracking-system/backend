@@ -60,14 +60,14 @@ class PositionServiceTest extends AnyFlatSpec {
     val newPosition = Position(None, 1, Some(1), 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
     val insertedPos = runtime.unsafeRun(mockedPositionService.persist(PositionRequest(newPosition)))
     assert(
-      insertedPos.asJson.noSpacesSortKeys equals """{"id":1,"latitude":52.524,"longitude":64.25445,"speed":100.152,"timestamp":"2021-02-25T00:00:00+01:00[Europe/Prague]","vehicleId":1}"""
+      insertedPos.asJson.noSpacesSortKeys equals """{"id":1,"latitude":52.524,"longitude":64.25445,"speed":100.152,"timestamp":"2021-02-25T00:00:00+01:00[Europe/Prague]","trackId":1,"vehicleId":1}"""
     )
   }
   it should "be serializable to JSON with ID" in {
     positionDAO.clear()
     val newPosition = Position(None, 1, Some(1), 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
     assert(
-      newPosition.asJson.noSpacesSortKeys equals """{"id":null,"latitude":52.524,"longitude":64.25445,"speed":100.152,"timestamp":"2021-02-25T00:00:00+01:00[Europe/Prague]","vehicleId":1}"""
+      newPosition.asJson.noSpacesSortKeys equals """{"id":null,"latitude":52.524,"longitude":64.25445,"speed":100.152,"timestamp":"2021-02-25T00:00:00+01:00[Europe/Prague]","trackId":1,"vehicleId":1}"""
     )
   }
 

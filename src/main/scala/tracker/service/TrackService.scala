@@ -4,8 +4,7 @@ import tracker.dao.TrackDAO
 import tracker.{DefaultPagination, NewTrackRequest, Page, PageRequest, Pagination, Track}
 import zio.Task
 
-class TrackService(trackDAO: TrackDAO) {
-  val pagination: Pagination[Track] = DefaultPagination(trackDAO.findAll, () => trackDAO.count())
+class TrackService(trackDAO: TrackDAO, val pagination: Pagination[Track]) {
 
   def newTrack(request: NewTrackRequest): Task[Track] = { trackDAO.persist(request.track) }
 
@@ -13,5 +12,6 @@ class TrackService(trackDAO: TrackDAO) {
 }
 
 object TrackService {
-  def apply(trackDAO: TrackDAO): TrackService = new TrackService(trackDAO)
+  def apply(trackDAO: TrackDAO): TrackService =
+    new TrackService(trackDAO, DefaultPagination(trackDAO.findAll, () => trackDAO.count()))
 }
