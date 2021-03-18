@@ -131,6 +131,7 @@ object VehicleFleet {
 final case class Position(
     id: Option[Long],
     vehicleId: Long,
+    trackId: Option[Long],
     speed: Double,
     latitude: Double,
     longitude: Double,

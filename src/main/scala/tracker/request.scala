@@ -45,12 +45,13 @@ object PositionRequest {
   implicit val decoder: Decoder[PositionRequest] = (c: HCursor) =>
     for {
       vehicleId <- c.downField("vehicleId").as[Long]
+      trackId <- c.downField("trackId").as[Long]
       speed <- c.downField("speed").as[Double]
       latitude <- c.downField("latitude").as[Double]
       longitude <- c.downField("longitude").as[Double]
     } yield {
       new PositionRequest(
-        Position(None, vehicleId, speed, latitude, longitude)
+        Position(None, vehicleId, Some(trackId), speed, latitude, longitude)
       )
     }
 }

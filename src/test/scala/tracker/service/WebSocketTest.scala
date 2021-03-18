@@ -38,7 +38,7 @@ class WebSocketTest extends AnyFlatSpec {
   "Position message" should "be serializable to JSON" in {
     val message: WebSocketMessage =
       WebSocketMessage.position(
-        Position(Some(1), 2, 52.51, 50.087823, 14.430026, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
+        Position(Some(1), 2, Some(1), 52.51, 50.087823, 14.430026, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
       )
     assert(
       message.asJson.noSpacesSortKeys equals

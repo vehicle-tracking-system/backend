@@ -18,7 +18,7 @@ class PositionServiceTest extends AnyFlatSpec {
     override def persist(position: Position): Task[Position] =
       Task.effect {
         maxId = maxId + 1
-        val pos = Position(Some(maxId), position.vehicleId, position.speed, position.latitude, position.longitude, position.timestamp)
+        val pos = Position(Some(maxId), position.vehicleId, Some(1), position.speed, position.latitude, position.longitude, position.timestamp)
         positions = positions.appended(pos)
         pos
       }
@@ -57,7 +57,7 @@ class PositionServiceTest extends AnyFlatSpec {
 
   "Position" should "be serializable to JSON without ID" in {
     positionDAO.clear()
-    val newPosition = Position(None, 1, 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
+    val newPosition = Position(None, 1, Some(1), 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
     val insertedPos = runtime.unsafeRun(mockedPositionService.persist(PositionRequest(newPosition)))
     assert(
       insertedPos.asJson.noSpacesSortKeys equals """{"id":1,"latitude":52.524,"longitude":64.25445,"speed":100.152,"timestamp":"2021-02-25T00:00:00+01:00[Europe/Prague]","vehicleId":1}"""
@@ -65,7 +65,7 @@ class PositionServiceTest extends AnyFlatSpec {
   }
   it should "be serializable to JSON with ID" in {
     positionDAO.clear()
-    val newPosition = Position(None, 1, 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
+    val newPosition = Position(None, 1, Some(1), 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
     assert(
       newPosition.asJson.noSpacesSortKeys equals """{"id":null,"latitude":52.524,"longitude":64.25445,"speed":100.152,"timestamp":"2021-02-25T00:00:00+01:00[Europe/Prague]","vehicleId":1}"""
     )
@@ -73,7 +73,7 @@ class PositionServiceTest extends AnyFlatSpec {
 
   "PositionService" should "handle new position" in {
     positionDAO.clear()
-    val newPosition = Position(None, 1, 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
+    val newPosition = Position(None, 1, Some(1), 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
     runtime.unsafeRun(mockedPositionService.persist(PositionRequest(newPosition)))
     assert(positionDAO.positions.size equals 1)
     runtime.unsafeRun(mockedPositionService.persist(PositionRequest(newPosition)))
@@ -81,8 +81,8 @@ class PositionServiceTest extends AnyFlatSpec {
   }
   it should "find specified position" in {
     positionDAO.clear()
-    val newPosition1 = Position(None, 1, 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
-    val newPosition2 = Position(None, 1, 45.1, 52.524, 64.25445, ZonedDateTime.of(2020, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
+    val newPosition1 = Position(None, 1, Some(1), 100.152, 52.524, 64.25445, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
+    val newPosition2 = Position(None, 1, Some(1), 45.1, 52.524, 64.25445, ZonedDateTime.of(2020, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
     val insertedPos = runtime.unsafeRun(mockedPositionService.persist(PositionRequest(newPosition1)))
     runtime.unsafeRun(mockedPositionService.persist(PositionRequest(newPosition2)))
     assert(

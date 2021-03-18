@@ -11,7 +11,7 @@ class VehicleService(vehicleDAO: VehicleDAO) {
 
   def getList(ids: Set[Long]): Task[List[Vehicle]] = vehicleDAO.findList(ids.toList)
 
-  def getAll(request: VehiclesRequest): Task[Page[Vehicle]] = pagination.getPage(request.page, request.pageSize)
+  def getAll(request: PageRequest): Task[Page[Vehicle]] = pagination.getPage(request.page, request.pageSize)
 }
 
 object VehicleService {
