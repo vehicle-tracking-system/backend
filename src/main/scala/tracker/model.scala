@@ -141,3 +141,10 @@ object Position {
   implicit val encoder: Encoder[Position] = deriveEncoder
   implicit val decoder: Decoder[Position] = deriveDecoder
 }
+
+final case class Track(id: Option[Long], vehicleId: Long, timestamp: ZonedDateTime = ZonedDateTime.now())
+
+object Track {
+  implicit val encoder: Encoder[Track] = deriveEncoder
+  implicit val decoder: Decoder[Track] = deriveDecoder
+}
