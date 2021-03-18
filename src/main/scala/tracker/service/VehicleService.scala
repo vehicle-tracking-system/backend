@@ -1,6 +1,6 @@
 package tracker.service
 
-import tracker.{DefaultPagination, Page, Pagination, Vehicle, VehiclesRequest}
+import tracker.{DefaultPagination, Page, PageRequest, Pagination, Vehicle}
 import tracker.dao.VehicleDAO
 import zio.Task
 

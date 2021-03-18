@@ -164,7 +164,7 @@ class Http4sRoutingModule(
 
   private def handleGetVehicles(req: Request[Task]): Task[Response[Task]] = {
     req
-      .as[VehiclesRequest]
+      .as[PageRequest]
       .flatMap(vehicleService.getAll)
       .flatMap(p => Ok(p.asJson.noSpacesSortKeys))
   }

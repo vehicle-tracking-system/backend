@@ -13,7 +13,8 @@ trait Pagination[A] {
 case class Page[A](page: Int, totalPage: Int, pageSize: Int, data: List[A])
 
 object Page {
-  implicit val encoder: Encoder[Page[Vehicle]] = deriveEncoder
+  implicit val vehicleEncoder: Encoder[Page[Vehicle]] = deriveEncoder
+  implicit val trackEncoder: Encoder[Page[Track]] = deriveEncoder
 }
 
 class DefaultPagination[A](find: (Int, Int) => Task[List[A]], count: () => Task[Int]) extends Pagination[A] {
@@ -25,8 +26,8 @@ class DefaultPagination[A](find: (Int, Int) => Task[List[A]], count: () => Task[
 }
 
 object DefaultPagination {
-  def apply(f: (Offset, Size) => Task[List[Vehicle]], count: () => Task[Int]): Pagination[Vehicle] =
-    new DefaultPagination[Vehicle](f, count)
+  implicit def apply[A](f: (Offset, Size) => Task[List[A]], count: () => Task[Int]): Pagination[A] =
+    new DefaultPagination[A](f, count)
 
   type Offset = Int
   type Size = Int

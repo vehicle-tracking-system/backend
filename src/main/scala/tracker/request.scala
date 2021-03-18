@@ -55,10 +55,14 @@ object PositionRequest {
     }
 }
 
-final case class VehiclesRequest(page: Int = 1, pageSize: Int)
+final case class PageRequest(page: Int, pageSize: Int)
 
-object VehiclesRequest {
-  implicit val decoder: Decoder[VehiclesRequest] = deriveDecoder
+object PageRequest {
+  implicit val decoder: Decoder[PageRequest] = (c: HCursor) =>
+    for {
+      page <- c.downField("page").as[Option[Int]]
+      pageSize <- c.downField("pageSize").as[Option[Int]]
+    } yield PageRequest(page.getOrElse(1), pageSize.getOrElse(Int.MaxValue))
 }
 
 final case class VehiclePositionsRequest(vehicleId: Long, page: Int = 1, pageSize: Int = 20)
@@ -71,4 +75,21 @@ final case class VehiclePositionHistoryRequest(vehicleId: Long, since: ZonedDate
 
 object VehiclePositionHistoryRequest {
   implicit val decoder: Decoder[VehiclePositionHistoryRequest] = deriveDecoder
+}
+
+final case class NewTrackRequest(position: Position, track: Track)
+
+object NewTrackRequest {
+  implicit val decoder: Decoder[NewTrackRequest] = (c: HCursor) =>
+    for {
+      vehicleId <- c.downField("vehicleId").as[Long]
+      speed <- c.downField("speed").as[Double]
+      latitude <- c.downField("latitude").as[Double]
+      longitude <- c.downField("longitude").as[Double]
+    } yield {
+      new NewTrackRequest(
+        Position(None, vehicleId, None, speed, latitude, longitude),
+        Track(None, vehicleId)
+      )
+    }
 }
