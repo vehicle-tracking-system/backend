@@ -60,8 +60,8 @@ object WebSocketMessage {
   implicit val encoder: Encoder[WebSocketMessage] =
     DefaultWebSocketMessage.encoder.contramap(_.asInstanceOf[DefaultWebSocketMessage])
 
-  val empty: WebSocketMessage = new DefaultWebSocketMessage(Empty, None, "")
-  val heartbeat: WebSocketMessage = new DefaultWebSocketMessage(Heartbeat, None, "")
+  val empty: WebSocketMessage = new DefaultWebSocketMessage(Empty, None, "{}")
+  val heartbeat: WebSocketMessage = new DefaultWebSocketMessage(Heartbeat, None, "{}")
   val internalError: WebSocketMessage = error("Internal server error")
   def text(text: String): WebSocketMessage = new DefaultWebSocketMessage(Text, None, text)
   def error(text: String): WebSocketMessage = new DefaultWebSocketMessage(Error, None, text)

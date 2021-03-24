@@ -11,7 +11,7 @@ class WebSocketTest extends AnyFlatSpec {
 
   "Heartbeat message" should "be serializable to JSON" in {
     val message: WebSocketMessage = WebSocketMessage.heartbeat
-    assert(message.asJson.noSpacesSortKeys == """{"msgType":"HEARTBEAT","payload":"","token":null}""")
+    assert(message.asJson.noSpacesSortKeys == """{"msgType":"HEARTBEAT","payload":"{}","token":null}""")
   }
 
   "Text message" should "be serializable to JSON" in {

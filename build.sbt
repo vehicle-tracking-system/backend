@@ -15,6 +15,8 @@ resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
 
 lazy val commonSettings = BuildSettings.common ++ Seq(
   libraryDependencies ++= Seq(
+    Dependencies.mqttClient,
+    Dependencies.fs2,
     Dependencies.slog4sAPI,
     Dependencies.slog4s,
     Dependencies.pac4j,
@@ -51,6 +53,9 @@ lazy val root = project
       Dependencies.sstMicrometerJmxPureConfig,
 //      Dependencies.doobie
       Dependencies.doobieh2
+    ),
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
     ),
     name := "tracker-server"
   )
