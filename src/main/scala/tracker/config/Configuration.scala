@@ -22,7 +22,8 @@ final case class Configuration(
     client: Http4sBlazeClientConfig,
     circuitBreaker: CircuitBreakerConfig,
     jmx: MicrometerJmxConfig,
-    jwt: JwtConfig
+    jwt: JwtConfig,
+    mqtt: MqttConfig
 )
 
 object Configuration {

@@ -1,7 +1,6 @@
 package tracker
 
 import cats.effect.{Clock, Resource}
-import com.avast.sst.bundle.ZioServerApp
 import com.avast.sst.doobie.DoobieHikariModule
 import com.avast.sst.http4s.client.Http4sBlazeClientModule
 import com.avast.sst.http4s.client.monix.catnap.Http4sClientCircuitBreakerModule
@@ -19,20 +18,44 @@ import com.avast.sst.pureconfig.PureConfigModule
 import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
 import fs2.concurrent.Topic
 import org.http4s.server.Server
+import org.slf4j.LoggerFactory
 import slog4s.slf4j.Slf4jFactory
 import tracker.config.Configuration
-import tracker.dao.{FleetDAO, PositionDAO, TrackDAO, UserDAO, VehicleDAO}
-import tracker.module.Http4sRoutingModule
-import tracker.service.{FleetService, PositionService, TrackService, UserService, VehicleService}
-import zio.Task
+import tracker.dao._
+import tracker.module.{Http4sRoutingModule, MqttModule}
+import tracker.security.DefaultAccessTokenParser
+import tracker.service._
+import zio._
 import zio.interop.catz._
 import zio.interop.catz.implicits._
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext
 
-object Main extends ZioServerApp {
-  def program: Resource[Task, Server[Task]] = {
+object Main extends CatsApp {
+
+  case class MainResources(server: Resource[Task, Server[Task]], mqtt: Resource[Task, MqttModule.type])
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
+  override def run(args: List[String]): ZIO[ZEnv, Nothing, ExitCode] = {
+    program
+      .use { resources =>
+        for {
+          _ <- UIO.effectTotal(logger.info(s"Server started @ ${resources._1.address.getHostString}:${resources._1.address.getPort}"))
+          _ <- resources._2.make().use(_ => Task.unit)
+        } yield resources
+      }
+      .fold(
+        ex => {
+          logger.error("Server initialization failed!", ex)
+          ExitCode.failure
+        },
+        _ => ExitCode.success
+      )
+  }
+
+  def program: Resource[Task, (Server[Task], MqttModule)] = {
     for {
       configuration <- Resource.liftF(PureConfigModule.makeOrRaise[Task, Configuration])
       executorModule <- ExecutorModule.makeFromExecutionContext[Task](runtime.platform.executor.asEC)
@@ -77,6 +100,7 @@ object Main extends ZioServerApp {
       vehicleService = VehicleService(vehicleDAO)
       positionService = PositionService(positionDAO, loggerFactory)
       trackService = TrackService(trackDAO)
+      mqttService = MqttService(loggerFactory, positionService, DefaultAccessTokenParser, configuration)
 
       topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.heartbeat))
 
@@ -97,8 +121,9 @@ object Main extends ZioServerApp {
         serverMetricsModule,
         configuration
       )
+      mqtt = new MqttModule(mqttService.processMessage, configuration, loggerFactory.make("mqtt-module"))
       server <- Http4sBlazeServerModule.make[Task](configuration.server, routingModule.router, executorModule.executionContext)
-    } yield server
+    } yield (server, mqtt)
   }
 
 }

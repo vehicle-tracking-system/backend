@@ -7,11 +7,14 @@ import tracker.Position
 import zio.Task
 import doobie.implicits.javatime._
 import doobie.util.fragment.Fragment
+import doobie.Update
 
 import java.time.ZonedDateTime
 
 trait PositionDAO {
   def persist(position: Position): Task[Position]
+
+  def persistList(positions: List[Position]): Task[Int]
 
   def update(position: Position): Task[Position]
 
@@ -34,6 +37,12 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
           .transact(transactor)
       position <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
     } yield position
+  }
+
+  override def persistList(positions: List[Position]): Task[Int] = {
+    val positionsInfo: List[PositionInfo] = positions.map(p => (p.vehicleId, p.trackId, p.speed, p.latitude, p.longitude, p.timestamp))
+    val sql = """INSERT INTO POSITION (VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP) VALUES (?, ?, ?, ?, ?, ?)"""
+    Update[PositionInfo](sql).updateMany(positionsInfo).transact(transactor)
   }
 
   override def update(position: Position): Task[Position] = {
@@ -79,6 +88,8 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
       .to[List]
       .transact(transactor)
   }
+
+  type PositionInfo = (Long, Option[Long], Double, Double, Double, ZonedDateTime)
 }
 
 object PositionDAO {

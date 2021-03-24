@@ -1,6 +1,9 @@
 import sbt._
 
 object Dependencies {
+  val scalapb = "com.thesamet.scalapb" %% "compilerplugin" % Versions.scalapb
+  val mqttClient = "net.sigusr" %% "fs2-mqtt" % Versions.mqtt
+  val fs2 = "co.fs2" %% "fs2-core" % Versions.fs2
   val slog4sAPI = "com.avast" %% "slog4s-api" % Versions.slog4s
   val slog4s = "com.avast" %% "slog4s-slf4j" % Versions.slog4s
   val pac4j = "org.pac4j" % "http4s-pac4j_2.13" % Versions.pac4j_http4s
@@ -48,6 +51,9 @@ object Dependencies {
     val pac4j_http4s = "2.0.1"
     val pac4j = "4.3.1"
     val slog4s = "0.6.0"
+    val fs2 = "2.5.0"
+    val mqtt = "0.4.2"
+    val scalapb = "0.11.0"
   }
 
 }

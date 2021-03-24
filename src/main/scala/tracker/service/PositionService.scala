@@ -26,6 +26,8 @@ class PositionService(positionDAO: PositionDAO, logger: Logger[Task]) {
     }
   }
 
+  def persist(positions: List[Position]): Task[Int] = positionDAO.persistList(positions)
+
   def getVehiclePositionHistory(request: VehiclePositionHistoryRequest): Task[List[Position]] = {
     if (ChronoUnit.DAYS.between(request.since, request.until) > 30)
       Task { List.empty }
