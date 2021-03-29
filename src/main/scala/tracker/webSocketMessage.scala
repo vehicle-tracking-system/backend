@@ -1,6 +1,6 @@
 package tracker
 
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax.EncoderOps
 
@@ -65,7 +65,12 @@ object WebSocketMessage {
   val internalError: WebSocketMessage = error("Internal server error")
   def text(text: String): WebSocketMessage = new DefaultWebSocketMessage(Text, None, text)
   def error(text: String): WebSocketMessage = new DefaultWebSocketMessage(Error, None, text)
-  def position(position: Position): WebSocketMessage = new DefaultWebSocketMessage(Position, None, position.asJson.noSpacesSortKeys)
+  def position(position: Position, isMoving: Boolean = false): WebSocketMessage =
+    new DefaultWebSocketMessage(
+      Position,
+      None,
+      position.asJson.deepMerge(Json.fromFields(List(("isMoving", Json.fromBoolean(isMoving))))).noSpacesSortKeys
+    )
   def vehicle(vehicles: List[Vehicle], token: Option[String] = None): WebSocketMessage =
     new DefaultWebSocketMessage(Vehicle, token, vehicles.asJson.noSpacesSortKeys)
 }

@@ -88,21 +88,22 @@ object Main extends CatsApp {
           )
 
       loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
+      topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.heartbeat))
 
       userDAO = UserDAO(doobieTransactor, loggerFactory)
       fleetDAO = FleetDAO(doobieTransactor)
       vehicleDAO = VehicleDAO(doobieTransactor)
       positionDAO = PositionDAO(doobieTransactor)
       trackDAO = TrackDAO(doobieTransactor)
+      trackerDAO = TrackerDAO(doobieTransactor)
 
       userService = UserService(userDAO, configuration.jwt, loggerFactory)
       fleetService = FleetService(fleetDAO)
       vehicleService = VehicleService(vehicleDAO)
       positionService = PositionService(positionDAO, loggerFactory)
       trackService = TrackService(trackDAO)
-      mqttService = MqttService(loggerFactory, positionService, DefaultAccessTokenParser, configuration)
-
-      topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.heartbeat))
+      trackerService = TrackerService(trackerDAO, userDAO, configuration.jwt, loggerFactory)
+      mqttService = MqttService(loggerFactory, trackerService, positionService, topic, DefaultAccessTokenParser, configuration)
 
       httpClient <- Http4sBlazeClientModule.make[Task](configuration.client, executorModule.executionContext)
       circuitBreakerMetrics <- Resource.liftF(MicrometerCircuitBreakerMetricsModule.make[Task]("test-http-client", meterRegistry))
