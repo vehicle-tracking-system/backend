@@ -94,3 +94,28 @@ object NewTrackRequest {
       )
     }
 }
+
+final case class NewTrackerRequest(tracker: LightTracker)
+
+object NewTrackerRequest {
+  implicit val decoder: Decoder[NewTrackerRequest] = (c: HCursor) =>
+    for {
+      name <- c.downField("name").as[String]
+      vehicleId <- c.downField("vehicleId").as[Long]
+    } yield {
+      new NewTrackerRequest(LightTracker(None, name, vehicleId, "N/A", ZonedDateTime.now(), None))
+    }
+}
+
+final case class UpdateTrackerRequest(tracker: LightTracker)
+
+object UpdateTrackerRequest {
+  implicit val decoder: Decoder[UpdateTrackerRequest] = (c: HCursor) =>
+    for {
+      id <- c.downField("id").as[Long]
+      name <- c.downField("name").as[String]
+      vehicleId <- c.downField("vehicleId").as[Long]
+    } yield {
+      new UpdateTrackerRequest(LightTracker(Some(id), name, vehicleId, "N/A", ZonedDateTime.now(), None))
+    }
+}
