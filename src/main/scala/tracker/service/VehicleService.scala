@@ -1,6 +1,6 @@
 package tracker.service
 
-import tracker.{DefaultPagination, Page, PageRequest, Pagination, Vehicle}
+import tracker.{DefaultPagination, Page, Pagination, Vehicle}
 import tracker.dao.VehicleDAO
 import zio.Task
 
@@ -11,7 +11,8 @@ class VehicleService(vehicleDAO: VehicleDAO) {
 
   def getList(ids: Set[Long]): Task[List[Vehicle]] = vehicleDAO.findList(ids.toList)
 
-  def getAll(request: PageRequest): Task[Page[Vehicle]] = pagination.getPage(request.page, request.pageSize)
+  def getAll(page: Option[Int], pageSize: Option[Int]): Task[Page[Vehicle]] =
+    pagination.getPage(page.fold(1)(identity), pageSize.fold(Int.MaxValue)(identity))
 }
 
 object VehicleService {

@@ -95,7 +95,7 @@ object Main extends CatsApp {
       positionDAO = PositionDAO(doobieTransactor)
       trackDAO = TrackDAO(doobieTransactor)
 
-      userService = UserService(userDAO, configuration.jwt)
+      userService = UserService(userDAO, configuration.jwt, loggerFactory)
       fleetService = FleetService(fleetDAO)
       vehicleService = VehicleService(vehicleDAO)
       positionService = PositionService(positionDAO, loggerFactory)
