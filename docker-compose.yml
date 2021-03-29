@@ -6,10 +6,16 @@ services:
     ports:
       - 8085:8080
     environment:
-      - JWT_SECRET="mH@6@*6dp*p^8Xhegecv"
-      - JWT_EXPIRATION=600
+      - JWT_SECRET=mH@6@*6dp*p^8Xhegecv
+      - JWT_EXPIRATION=86400
       - DB_JDBC_URL=jdbc:h2:/DB/docker;MODE=MySQL
       - DB_USERNAME=
       - DB_PASSWORD=
+      - MQTT_HOST=mqtt.dev.jenda.eu
+      - MQTT_PORT=8883
+      - MQTT_TOPIC=sledovac
+      - MQTT_SUBSCRIBER_NAME=tracker-server
+      - MQTT_SSL=true
+      - FRONTEND_DIR=front/
     volumes:
-    - /home/dizider/DB:/DB
+      - /home/dizider/DB:/DB

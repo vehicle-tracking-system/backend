@@ -21,6 +21,7 @@ final case class Configuration(
     boundedConnectExecutor: ThreadPoolExecutorConfig,
     client: Http4sBlazeClientConfig,
     circuitBreaker: CircuitBreakerConfig,
+    frontend: String,
     jmx: MicrometerJmxConfig,
     jwt: JwtConfig,
     mqtt: MqttConfig

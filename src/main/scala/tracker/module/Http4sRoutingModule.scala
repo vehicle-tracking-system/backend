@@ -9,7 +9,8 @@ import org.http4s._
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.client.Client
 import org.http4s.dsl.Http4sDsl
-import org.http4s.server.middleware._
+import org.http4s.server.Router
+import org.http4s.server.middleware.CORS
 import slog4s.LoggerFactory
 import tracker.{Role, User, _}
 import tracker.Roles._
@@ -35,104 +36,107 @@ class Http4sRoutingModule(
 
   import serverMetricsModule._
 
-  private val ApiRoot = Root / "api"
-
   private val authMiddleware = AuthJwtMiddleware(DefaultAccessTokenParser, config.jwt, userService)
 
   private val authedRoutes: AuthedRoutes[User, Task] = AuthedRoutes.of {
-    case GET -> ApiRoot / "auth" as user => Ok(s"User: $user")
-    case request @ GET -> ApiRoot / "withRole" as _ =>
+    case GET -> Root / "auth" as user => Ok(s"User: $user")
+    case request @ GET -> Root / "withRole" as _ =>
       withRoles(Admin) {
         Ok("ok")
       }(request)
-    case request @ POST -> ApiRoot / "user" / "new" as _ =>
+    case request @ POST -> Root / "user" / "new" as _ =>
       withRoles(Admin) {
         handleNewUser(request.req)
       }(request)
-    case request @ POST -> ApiRoot / "user" as _ =>
+    case request @ POST -> Root / "user" as _ =>
       withRoles(Admin) {
         handleUpdateUser(request.req)
       }(request)
-    case request @ GET -> ApiRoot / "users" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
+    case request @ GET -> Root / "users" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
       withRoles(Reader) {
         userService.getAll(page, pageSize).flatMap(u => Ok(u.asJson))
       }(request)
-    case request @ GET -> ApiRoot / "user" :? IdQueryParamMatcher(id) as _ =>
+    case request @ GET -> Root / "user" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Admin) {
         handleGetUser(id)
       }(request)
-    case request @ GET -> ApiRoot / "vehicles" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
+    case request @ GET -> Root / "vehicles" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
       withRoles(Reader) {
         vehicleService.getAll(page, pageSize).flatMap(p => Ok(p.asJson))
       }(request)
-    case request @ GET -> ApiRoot / "vehicle" :? IdQueryParamMatcher(id) as _ =>
+    case request @ GET -> Root / "vehicle" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         handleGetVehicle(id)
       }(request)
-    case request @ GET -> ApiRoot / "fleet" :? IdQueryParamMatcher(id) as _ =>
+    case request @ GET -> Root / "fleet" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         handleGetFleet(id)
       }(request)
-    case request @ POST -> ApiRoot / "position" / "new" as _ =>
+    case request @ POST -> Root / "position" / "new" as _ =>
       withRoles(Editor) {
         handleNewPosition(request.req)
       }(request)
-    case request @ POST -> ApiRoot / "vehicle" / "positions" as _ =>
+    case request @ POST -> Root / "vehicle" / "positions" as _ =>
       withRoles(Reader) {
         handleGetVehiclePositions(request.req)
       }(request)
-    case request @ GET -> ApiRoot / "vehicle" / "position" :? IdQueryParamMatcher(id) as _ =>
+    case request @ GET -> Root / "vehicle" / "position" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         handleGetLastVehiclePosition(id)
       }(request)
-    case request @ POST -> ApiRoot / "vehicle" / "history" as _ =>
+    case request @ POST -> Root / "vehicle" / "history" as _ =>
       withRoles(Reader) {
         handleGetVehiclePositionHistory(request.req)
       }(request)
-    case request @ POST -> ApiRoot / "tracks" as _ =>
+    case request @ POST -> Root / "tracks" as _ =>
       withRoles(Reader) {
         handleGetAllTracks(request.req)
       }(request)
-    case request @ GET -> ApiRoot / "track" :? IdQueryParamMatcher(id) as _ =>
+    case request @ GET -> Root / "track" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         trackService.get(id).flatMap(track => Ok(track))
       }(request)
-    case request @ GET -> ApiRoot / "trackers" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
+    case request @ GET -> Root / "trackers" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
       withRoles(Reader) {
         trackerService.getAll(page, pageSize).flatMap(t => Ok(t.asJson))
       }(request)
-    case request @ GET -> ApiRoot / "tracker" :? IdQueryParamMatcher(id) as _ =>
+    case request @ GET -> Root / "tracker" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         trackerService.get(id).flatMap(_.fold(NotFound())(Ok(_)))
       }(request)
-    case request @ POST -> ApiRoot / "tracker" / "new" as _ =>
+    case request @ POST -> Root / "tracker" / "new" as _ =>
       withRoles(Editor) {
         handleNewTracker(request.req)
       }(request)
-    case request @ POST -> ApiRoot / "tracker" as _ =>
+    case request @ POST -> Root / "tracker" as _ =>
       withRoles(Editor) {
         handleUpdateTracker(request.req)
       }(request)
-    case request @ POST -> ApiRoot / "tracker" / "delete" as _ =>
+    case request @ POST -> Root / "tracker" / "delete" as _ =>
       withRoles(Editor) {
         handleDeleteTracker(request.req)
       }(request)
-    case request @ POST -> ApiRoot / "tracker" / "revoke" as _ =>
+    case request @ POST -> Root / "tracker" / "revoke" as _ =>
       withRoles(Editor) {
         handleRevokeTrackerToken(request.req)
       }(request)
   }
 
   private val routes = HttpRoutes.of[Task] {
-    case GET -> ApiRoot / "circuit-breaker"  => client.expect[String]("https://httpbin.org/status/500").flatMap(Ok(_))
-    case request @ POST -> ApiRoot / "login" => handleLogin(request)
-    case GET -> ApiRoot / "ws"               => WebSocketService(loggerFactory, DefaultAccessTokenParser, topic, vehicleService, config).flatMap(_.build)
+    case GET -> Root / "circuit-breaker"  => client.expect[String]("https://httpbin.org/status/500").flatMap(Ok(_))
+    case request @ POST -> Root / "login" => handleLogin(request)
+    case GET -> Root / "ws"               => WebSocketService(loggerFactory, DefaultAccessTokenParser, topic, vehicleService, config).flatMap(_.build)
 
   } <+> authMiddleware(authedRoutes)
 
   val router: HttpApp[Task] = Http4sRouting.make {
     serverMetrics {
-      CORS(routes)
+      CORS(
+        Router(
+          "api" -> routes,
+          "" -> StaticFileRoutingModule.make(config)
+        )
+      )
     }
   }
 
