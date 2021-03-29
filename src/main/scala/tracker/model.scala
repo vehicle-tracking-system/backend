@@ -149,3 +149,24 @@ object Track {
   implicit val encoder: Encoder[Track] = deriveEncoder
   implicit val decoder: Decoder[Track] = deriveDecoder
 }
+
+final case class LightTracker(
+    id: Option[Long],
+    name: String,
+    vehicleId: Long,
+    token: String,
+    createdAt: ZonedDateTime = ZonedDateTime.now(),
+    deletedAt: Option[ZonedDateTime]
+)
+
+final case class Tracker(tracker: LightTracker, vehicle: LightVehicle)
+
+object LightTracker {
+  implicit val encoder: Encoder[LightTracker] = deriveEncoder
+  implicit val decoder: Decoder[LightTracker] = deriveDecoder
+}
+
+object Tracker {
+  implicit val encoder: Encoder[Tracker] = deriveEncoder
+  implicit val decoder: Decoder[Tracker] = deriveDecoder
+}
