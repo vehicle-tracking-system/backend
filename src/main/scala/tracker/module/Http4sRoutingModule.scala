@@ -26,6 +26,7 @@ class Http4sRoutingModule(
     fleetService: FleetService,
     positionService: PositionService,
     trackService: TrackService,
+    trackerService: TrackerService,
     loggerFactory: LoggerFactory[Task],
     client: Client[Task],
     serverMetricsModule: MicrometerHttp4sServerMetricsModule[Task],
@@ -92,6 +93,34 @@ class Http4sRoutingModule(
       withRoles(Reader) {
         handleGetAllTracks(request.req)
       }(request)
+    case request @ GET -> ApiRoot / "track" :? IdQueryParamMatcher(id) as _ =>
+      withRoles(Reader) {
+        trackService.get(id).flatMap(track => Ok(track))
+      }(request)
+    case request @ GET -> ApiRoot / "trackers" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
+      withRoles(Reader) {
+        trackerService.getAll(page, pageSize).flatMap(t => Ok(t.asJson))
+      }(request)
+    case request @ GET -> ApiRoot / "tracker" :? IdQueryParamMatcher(id) as _ =>
+      withRoles(Reader) {
+        trackerService.get(id).flatMap(_.fold(NotFound())(Ok(_)))
+      }(request)
+    case request @ POST -> ApiRoot / "tracker" / "new" as _ =>
+      withRoles(Editor) {
+        handleNewTracker(request.req)
+      }(request)
+    case request @ POST -> ApiRoot / "tracker" as _ =>
+      withRoles(Editor) {
+        handleUpdateTracker(request.req)
+      }(request)
+    case request @ POST -> ApiRoot / "tracker" / "delete" as _ =>
+      withRoles(Editor) {
+        handleDeleteTracker(request.req)
+      }(request)
+    case request @ POST -> ApiRoot / "tracker" / "revoke" as _ =>
+      withRoles(Editor) {
+        handleRevokeTrackerToken(request.req)
+      }(request)
   }
 
   private val routes = HttpRoutes.of[Task] {
@@ -130,21 +159,21 @@ class Http4sRoutingModule(
 
   private def handleGetVehicle(id: Long): Task[Response[Task]] = {
     vehicleService.get(id).flatMap {
-      case Some(vehicle) => Ok(vehicle.asJson.noSpacesSortKeys)
+      case Some(vehicle) => Ok(vehicle.asJson)
       case None          => NotFound("Vehicle not found")
     }
   }
 
   private def handleGetFleet(id: Long): Task[Response[Task]] = {
     fleetService.get(id).flatMap {
-      case Some(fleet) => Ok(fleet.asJson.noSpacesSortKeys)
+      case Some(fleet) => Ok(fleet.asJson)
       case None        => NotFound("Fleet not found")
     }
   }
 
   private def handleGetUser(id: Long): Task[Response[Task]] = {
     userService.getUserById(id).flatMap {
-      case Some(user) => Ok(user.asJson.noSpacesSortKeys)
+      case Some(user) => Ok(user.asJson)
       case None       => NotFound("User not found")
     }
   }
@@ -170,16 +199,9 @@ class Http4sRoutingModule(
       .flatMap(Ok(_))
   }
 
-  private def handleGetVehicles(req: Request[Task]): Task[Response[Task]] = {
-    req
-      .as[PageRequest]
-      .flatMap(vehicleService.getAll)
-      .flatMap(p => Ok(p.asJson.noSpacesSortKeys))
-  }
-
   private def handleGetLastVehiclePosition(vehicleId: Long): Task[Response[Task]] = {
     positionService.getLastVehiclePosition(vehicleId).flatMap {
-      case Some(position) => Ok(position.asJson.noSpacesSortKeys)
+      case Some(position) => Ok(position.asJson)
       case None           => NotFound("Vehicle not found")
     }
   }
@@ -188,7 +210,34 @@ class Http4sRoutingModule(
     req
       .as[PageRequest]
       .flatMap(trackService.getAll)
-      .flatMap(t => Ok(t.asJson.noSpacesSortKeys))
+      .flatMap(t => Ok(t.asJson))
+  }
+
+  private def handleNewTracker(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[NewTrackerRequest]
+      .flatMap(trackerService.persist)
+      .flatMap(t => Ok(t.asJson))
+  }
+
+  private def handleUpdateTracker(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[UpdateTrackerRequest]
+      .flatMap(trackerService.update)
+      .flatMap(t => Ok(t.asJson))
+  }
+
+  private def handleDeleteTracker(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[UpdateTrackerRequest]
+      .flatMap(trackerService.delete)
+      .flatMap(t => Ok(t.asJson))
+  }
+  private def handleRevokeTrackerToken(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[UpdateTrackerRequest]
+      .flatMap(trackerService.updateAccessToken)
+      .flatMap(t => Ok(t.asJson))
   }
 
   private def withRoles(

@@ -117,6 +117,7 @@ object Main extends CatsApp {
         fleetService,
         positionService,
         trackService,
+        trackerService,
         loggerFactory,
         client,
         serverMetricsModule,

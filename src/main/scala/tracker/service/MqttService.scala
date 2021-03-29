@@ -1,6 +1,5 @@
 package tracker.service
 
-import cats.data.Validated._
 import fs2.concurrent.Topic
 import net.sigusr.mqtt.api.Message
 import protocol.tracker._

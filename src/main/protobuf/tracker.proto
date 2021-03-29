@@ -5,7 +5,8 @@ package protocol;
 message Report {
   required string token = 1;
   optional int64 timestamp = 2;
-  repeated TrackerPosition positions = 3;
+  required bool isMoving = 3;
+  repeated TrackerPosition positions = 4;
 }
 
 message TrackerPosition {

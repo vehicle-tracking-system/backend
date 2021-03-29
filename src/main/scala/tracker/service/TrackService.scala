@@ -9,6 +9,8 @@ class TrackService(trackDAO: TrackDAO, val pagination: Pagination[Track]) {
   def newTrack(request: NewTrackRequest): Task[Track] = { trackDAO.persist(request.track) }
 
   def getAll(request: PageRequest): Task[Page[Track]] = pagination.getPage(request.page, request.pageSize)
+
+  def get(id: Long): Task[Option[Track]] = trackDAO.find(id)
 }
 
 object TrackService {

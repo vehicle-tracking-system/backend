@@ -64,6 +64,8 @@ object Roles {
 
   case object Editor extends Role
 
+  case object Tracker extends Role
+
 }
 
 object Role {
@@ -75,20 +77,22 @@ object Role {
 
   def fromString(name: String): Either[String, Role] = {
     name match {
-      case "ADMIN"  => Right(Roles.Admin)
-      case "USER"   => Right(Roles.User)
-      case "READER" => Right(Roles.Reader)
-      case "EDITOR" => Right(Roles.Editor)
-      case _        => Left(s"Non existing role: $name")
+      case "ADMIN"   => Right(Roles.Admin)
+      case "USER"    => Right(Roles.User)
+      case "READER"  => Right(Roles.Reader)
+      case "EDITOR"  => Right(Roles.Editor)
+      case "TRACKER" => Right(Roles.Tracker)
+      case _         => Left(s"Non existing role: $name")
     }
   }
 
   def toString(role: Role): String = {
     role match {
-      case Roles.Admin  => "ADMIN"
-      case Roles.User   => "USER"
-      case Roles.Editor => "EDITOR"
-      case Roles.Reader => "READER"
+      case Roles.Admin   => "ADMIN"
+      case Roles.User    => "USER"
+      case Roles.Editor  => "EDITOR"
+      case Roles.Reader  => "READER"
+      case Roles.Tracker => "TRACKER"
     }
   }
 }
