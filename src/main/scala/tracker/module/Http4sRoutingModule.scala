@@ -34,53 +34,57 @@ class Http4sRoutingModule(
 
   import serverMetricsModule._
 
-  private val helloWorldRoute = routeMetrics.wrap("hello")(Ok("Hello World!"))
+  private val ApiRoot = Root / "api"
 
   private val authMiddleware = AuthJwtMiddleware(DefaultAccessTokenParser, config.jwt, userService)
 
   private val authedRoutes: AuthedRoutes[User, Task] = AuthedRoutes.of {
-    case GET -> Root / "auth" as user => Ok(s"User: $user")
-    case request @ GET -> Root / "withRole" as _ =>
+    case GET -> ApiRoot / "auth" as user => Ok(s"User: $user")
+    case request @ GET -> ApiRoot / "withRole" as _ =>
       withRoles(Admin) {
         Ok("ok")
       }(request)
-    case request @ POST -> Root / "user" / "new" as _ =>
+    case request @ POST -> ApiRoot / "user" / "new" as _ =>
       withRoles(Admin) {
         handleNewUser(request.req)
       }(request)
-    case request @ POST -> Root / "user" as _ =>
+    case request @ POST -> ApiRoot / "user" as _ =>
       withRoles(Admin) {
         handleUpdateUser(request.req)
       }(request)
-    case request @ GET -> Root / "user" / LongVar(id) as _ =>
+    case request @ GET -> ApiRoot / "users" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
+      withRoles(Reader) {
+        userService.getAll(page, pageSize).flatMap(u => Ok(u.asJson))
+      }(request)
+    case request @ GET -> ApiRoot / "user" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Admin) {
         handleGetUser(id)
       }(request)
-    case request @ POST -> Root / "vehicles" as _ =>
+    case request @ GET -> ApiRoot / "vehicles" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
       withRoles(Reader) {
-        handleGetVehicles(request.req)
+        vehicleService.getAll(page, pageSize).flatMap(p => Ok(p.asJson))
       }(request)
-    case request @ GET -> Root / "vehicle" / LongVar(id) as _ =>
+    case request @ GET -> ApiRoot / "vehicle" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         handleGetVehicle(id)
       }(request)
-    case request @ GET -> Root / "fleet" / LongVar(id) as _ =>
+    case request @ GET -> ApiRoot / "fleet" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         handleGetFleet(id)
       }(request)
-    case request @ POST -> Root / "position" / "new" as _ =>
+    case request @ POST -> ApiRoot / "position" / "new" as _ =>
       withRoles(Editor) {
         handleNewPosition(request.req)
       }(request)
-    case request @ POST -> Root / "vehicle" / "positions" as _ =>
+    case request @ POST -> ApiRoot / "vehicle" / "positions" as _ =>
       withRoles(Reader) {
         handleGetVehiclePositions(request.req)
       }(request)
-    case request @ GET -> Root / "vehicle" / LongVar(id) / "position" as _ =>
+    case request @ GET -> ApiRoot / "vehicle" / "position" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         handleGetLastVehiclePosition(id)
       }(request)
-    case request @ POST -> Root / "vehicle" / "history" as _ =>
+    case request @ POST -> ApiRoot / "vehicle" / "history" as _ =>
       withRoles(Reader) {
         handleGetVehiclePositionHistory(request.req)
       }(request)
