@@ -89,7 +89,7 @@ object Main extends CatsApp {
 
       loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
 
-      userDAO = UserDAO(doobieTransactor)
+      userDAO = UserDAO(doobieTransactor, loggerFactory)
       fleetDAO = FleetDAO(doobieTransactor)
       vehicleDAO = VehicleDAO(doobieTransactor)
       positionDAO = PositionDAO(doobieTransactor)

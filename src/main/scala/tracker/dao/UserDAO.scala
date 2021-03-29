@@ -4,7 +4,8 @@ import cats.implicits.catsSyntaxFlatMapOps
 import doobie.implicits._
 import doobie.implicits.javatime._
 import doobie.util.transactor.Transactor
-import org.log4s.{getLogger, Logger}
+import doobie.Fragment
+import slog4s.{Logger, LoggerFactory}
 import tracker.User
 import zio.Task
 import zio.interop.catz._
@@ -16,26 +17,34 @@ trait UserDAO {
 
   def find(id: Long): Task[Option[User]]
 
+  def findAll(offset: Int, limit: Int): Task[List[User]]
+
   def findByUsername(username: String): Task[Option[User]]
+
+  def count(): Task[Int]
 }
 
-class DefaultUserDAO(transactor: Transactor[Task], logger: Logger = getLogger) extends UserDAO {
+class DefaultUserDAO(transactor: Transactor[Task], logger: Logger[Task]) extends UserDAO {
   def find(id: Long): Task[Option[User]] = {
-    Task {
-      logger.debug(s"Selecting user with id: ${id}")
-    } >> (sql"""SELECT id, name, created_at, deleted_at, password, username, roles FROM USER WHERE ID = $id""")
+    logger.info(
+      s"Selecting user with id: ${id}"
+    ) >> (sql"""SELECT id, name, created_at, deleted_at, password, username, roles FROM USER WHERE ID = $id""")
       .query[User]
       .option
       .transact(transactor)
   }
 
+  override def findAll(offset: Int, limit: Int): Task[List[User]] = {
+    logger.info("Selecting all users") >>
+      findBy(Fragment.empty, offset, limit)
+  }
+
   def findByUsername(username: String): Task[Option[User]] = {
-    Task {
-      logger.debug(s"Selecting user username id: ${username}")
-    } >> (sql"""SELECT id, name, created_at, deleted_at, password, username, roles FROM USER WHERE username = $username""")
-      .query[User]
-      .option
-      .transact(transactor)
+    logger.debug(s"Selecting user username id: ${username}") >>
+      findBy(fr"""WHERE USERNAME = $username""").map {
+        case List() => None
+        case user   => Some(user.head)
+      }
   }
 
   def persist(user: User): Task[User] = {
@@ -65,8 +74,24 @@ class DefaultUserDAO(transactor: Transactor[Task], logger: Logger = getLogger) e
       user <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
     } yield user
   }
+
+  override def count(): Task[Int] = {
+    sql"""SELECT COUNT(*) FROM USER"""
+      .query[Int]
+      .unique
+      .transact(transactor)
+  }
+
+  private def findBy(fra: Fragment, offset: Int = 0, limit: Int = Int.MaxValue): Task[List[User]] =
+    (sql"""SELECT ID, NAME, CREATED_AT, DELETED_AT, PASSWORD, USERNAME, ROLES FROM USER """
+      ++ fra
+      ++ sql"""ORDER BY NAME LIMIT $limit OFFSET $offset""")
+      .query[User]
+      .to[List]
+      .transact(transactor)
 }
 
 object UserDAO {
-  def apply(transactor: Transactor[Task]): UserDAO = new DefaultUserDAO(transactor)
+  def apply(transactor: Transactor[Task], loggerFactory: LoggerFactory[Task]): UserDAO =
+    new DefaultUserDAO(transactor, loggerFactory.make("user-dao"))
 }

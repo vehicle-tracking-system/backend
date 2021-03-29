@@ -27,6 +27,11 @@ class UserServiceTest extends AsyncFunSuite {
 
     override def update(user: User): Task[User] =
       throw new NotImplementedError("User updating is not implemented for testing purposes.")
+
+    override def findAll(offset: Int, limit: Int): Task[List[User]] =
+      throw new NotImplementedError("User updating is not implemented for testing purposes.")
+
+    override def count(): Task[Int] = throw new NotImplementedError("User updating is not implemented for testing purposes.")
   }
 
   object UserDAOTest {
