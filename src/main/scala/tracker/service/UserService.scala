@@ -24,8 +24,7 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig) {
             Some {
               LoginResponse(
                 AccessTokenBuilder.createToken(
-                  parse(s"""{"clientId":"${user.id.get}"}""")
-                    .getOrElse(throw new IllegalStateException("JWT token creating error")),
+                  AccessTokenPayload(user.id.get, user.roles),
                   jwtConfig
                 ),
                 user

@@ -32,8 +32,7 @@ object AuthJwtMiddleware {
             .toRight("Authorization header not found")
         )
         token <- IO.fromEither(tokenParser.parseAccessToken(header, jwtConfig.secret))
-        clientId <- IO.fromEither(token.clientId.toLongOption.toRight("Could not convert ID to number"))
-        userOpt <- userService.getUserById(clientId).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
+        userOpt <- userService.getUserById(token.clientId).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
         user <- IO.fromEither(userOpt.toRight("User not found"))
       } yield {
         user

@@ -41,10 +41,9 @@ object DefaultAccessTokenParser extends AccessTokenParser {
     circeParse(token)
       .map { json =>
         val cursor = json.hcursor
-        val clientRoles = extractRolesMap(cursor)
         AccessToken(
-          clientId = cursor.get[String]("clientId").getOrElse("unavailable"),
-          clientRoles = clientRoles,
+          clientId = cursor.get[Long]("clientId").getOrElse(Long.MinValue),
+          clientRoles = cursor.get[Seq[String]]("roles").getOrElse(Seq.empty),
           expiration = cursor.get[Instant]("exp").toOption,
           notBefore = cursor.get[Instant]("nbf").toOption,
           issuedAt = cursor.get[Instant]("iat").toOption,
@@ -52,17 +51,5 @@ object DefaultAccessTokenParser extends AccessTokenParser {
         )
       }
       .leftMap(_ => "Token decoding failure")
-  }
-
-  private def extractRolesMap(cursor: ACursor): Map[String, Seq[String]] = {
-    val c = cursor.downField("resource_access")
-    val elems = c.keys.getOrElse(Vector.empty)
-    elems.map { elemName =>
-      elemName -> extractRoles(c, elemName)
-    }.toMap
-  }
-
-  private def extractRoles(c: ACursor, elemName: String): Seq[String] = {
-    c.downField(elemName).get[Seq[String]]("roles").getOrElse(Seq.empty)
   }
 }
