@@ -97,7 +97,10 @@ object Role {
   }
 }
 
-final case class LightVehicle(id: Long, name: String)
+final case class LightVehicle(id: Option[Long], name: String) {
+  lazy val ID: Long = id.getOrElse(throw new IllegalStateException("LightVehicle without identifier"))
+}
+
 final case class Vehicle(vehicle: LightVehicle, fleets: List[LightFleet]) {
   def toLight: LightVehicle = this.vehicle
 }
@@ -112,7 +115,9 @@ object Vehicle {
   implicit val decoder: Decoder[Vehicle] = deriveDecoder
 }
 
-final case class LightFleet(id: Long, name: String)
+case class LightFleet(id: Option[Long] = None, name: String) {
+  lazy val ID: Long = id.getOrElse(throw new IllegalStateException("LightFleet without identifier"))
+}
 final case class Fleet(fleet: LightFleet, vehicles: List[LightVehicle])
 
 object LightFleet {

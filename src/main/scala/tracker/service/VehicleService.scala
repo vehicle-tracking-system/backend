@@ -22,15 +22,16 @@ class VehicleService(vehicleDAO: VehicleDAO, vehicleFleetDAO: VehicleFleetDAO, p
     vehicleDAO.update(req.data)
   }
 
-  def setFleets(vehicle: Vehicle): Task[Option[Vehicle]] = {
-    vehicleFleetDAO.setToVehicle(vehicle) >> vehicleDAO.find {
-      vehicle.vehicle.id.getOrElse(throw new IllegalStateException("Vehicle without identifier"))
-    }
+  def setFleets(vehicle: Vehicle): Task[Vehicle] = {
+    vehicleFleetDAO.setToVehicle(vehicle) >> vehicleDAO
+      .find(vehicle.vehicle.ID)
+      .map(_.getOrElse(throw new IllegalStateException("Vehicle with updated fleet not found")))
   }
 
-  def setFleets(vehicle: Vehicle, fleetsId: List[Long]): Task[Option[Vehicle]] =
+  def setFleets(vehicle: Vehicle, fleetsId: List[Long]): Task[Vehicle] = {
     vehicleFleetDAO.setToVehicle(Vehicle(vehicle.vehicle, fleetsId.map(id => LightFleet(Some(id), "N/A")))) >>
-      vehicleDAO.find(vehicle.vehicle.id.getOrElse(throw new IllegalStateException("Vehicle without identifier")))
+      vehicleDAO.find(vehicle.vehicle.ID).map(_.getOrElse(throw new IllegalStateException("Vehicle with updated fleet not found")))
+  }
 
 }
 

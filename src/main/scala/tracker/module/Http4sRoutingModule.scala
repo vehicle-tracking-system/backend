@@ -68,9 +68,25 @@ class Http4sRoutingModule(
       withRoles(Reader) {
         handleGetVehicle(id)
       }(request)
+    case request @ POST -> Root / "vehicle" as _ =>
+      withRoles(Editor) {
+        handleUpdateVehicle(request.req)
+      }(request)
+    case request @ POST -> Root / "vehicle" / "new" as _ =>
+      withRoles(Editor) {
+        handleNewVehicle(request.req)
+      }(request)
     case request @ GET -> Root / "fleet" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
         handleGetFleet(id)
+      }(request)
+    case request @ POST -> Root / "fleet" / "new" as _ =>
+      withRoles(Reader) {
+        handleNewFleet(request.req)
+      }(request)
+    case request @ GET -> Root / "fleets" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
+      withRoles(Reader) {
+        fleetService.getAll(page, pageSize).flatMap(t => Ok(t.asJson))
       }(request)
     case request @ POST -> Root / "position" / "new" as _ =>
       withRoles(Editor) {
@@ -164,15 +180,40 @@ class Http4sRoutingModule(
   private def handleGetVehicle(id: Long): Task[Response[Task]] = {
     vehicleService.get(id).flatMap {
       case Some(vehicle) => Ok(vehicle.asJson)
-      case None          => NotFound("Vehicle not found")
+      case None          => NotFound(NotFoundResponse("Vehicle not found").asJson)
     }
+  }
+
+  private def handleUpdateVehicle(req: Request[Task]): Task[Response[Task]] = {
+    val updatedVehicle = for {
+      vehicle <- req.as[UpdateVehicleRequest]
+      _ <- vehicleService.update(vehicle)
+      res <- vehicleService.setFleets(vehicle.data)
+    } yield res
+    Ok(updatedVehicle)
+  }
+
+  private def handleNewVehicle(req: Request[Task]): Task[Response[Task]] = {
+    val newVehicle = for {
+      vehicleRequest <- req.as[NewVehicleRequest]
+      newVehicle <- vehicleService.persist(vehicleRequest)
+      vehicleWithFleets <- vehicleService.setFleets(newVehicle, vehicleRequest.fleetsId)
+    } yield vehicleWithFleets
+    Ok(newVehicle)
   }
 
   private def handleGetFleet(id: Long): Task[Response[Task]] = {
     fleetService.get(id).flatMap {
       case Some(fleet) => Ok(fleet.asJson)
-      case None        => NotFound("Fleet not found")
+      case None        => NotFound(NotFoundResponse("Fleet not found").asJson)
     }
+  }
+
+  private def handleNewFleet(req: Request[Task]): Task[Response[Task]] = {
+    req
+      .as[NewFleetRequest]
+      .flatMap(fleetService.persist)
+      .flatMap(Ok(_))
   }
 
   private def handleGetUser(id: Long): Task[Response[Task]] = {

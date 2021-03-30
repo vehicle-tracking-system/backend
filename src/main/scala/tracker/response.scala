@@ -3,6 +3,12 @@ package tracker
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 
+final case class NotFoundResponse(text: String)
+
+object NotFoundResponse {
+  implicit val encoder: Encoder[NotFoundResponse] = deriveEncoder
+}
+
 final case class AccessTokenResponse(token: String)
 
 object AccessTokenResponse {

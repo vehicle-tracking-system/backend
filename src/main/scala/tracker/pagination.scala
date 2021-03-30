@@ -17,6 +17,7 @@ object Page {
   implicit val trackEncoder: Encoder[Page[Track]] = deriveEncoder
   implicit val trackerEncoder: Encoder[Page[Tracker]] = deriveEncoder
   implicit val userEncoder: Encoder[Page[User]] = deriveEncoder
+  implicit val fleetEncoder: Encoder[Page[Fleet]] = deriveEncoder
 }
 
 class DefaultPagination[A](find: (Int, Int) => Task[List[A]], count: () => Task[Int]) extends Pagination[A] {

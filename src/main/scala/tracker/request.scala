@@ -78,6 +78,33 @@ object VehiclePositionHistoryRequest {
   implicit val decoder: Decoder[VehiclePositionHistoryRequest] = deriveDecoder
 }
 
+final case class NewVehicleRequest(vehicle: LightVehicle, fleetsId: List[Long])
+
+object NewVehicleRequest {
+  implicit val decoder: Decoder[NewVehicleRequest] = (c: HCursor) =>
+    for {
+      name <- c.downField("name").as[String]
+      fleets <- c.downField("fleets").as[List[Long]]
+    } yield {
+      new NewVehicleRequest(
+        LightVehicle(None, name),
+        fleets
+      )
+    }
+}
+
+final case class NewFleetRequest(fleet: LightFleet)
+
+object NewFleetRequest {
+  implicit val decoder: Decoder[NewFleetRequest] = (c: HCursor) =>
+    for {
+      name <- c.downField("name").as[String]
+    } yield {
+      new NewFleetRequest(
+        LightFleet(None, name)
+      )
+    }
+}
 final case class NewTrackRequest(position: Position, track: Track)
 
 object NewTrackRequest {
@@ -105,6 +132,12 @@ object NewTrackerRequest {
     } yield {
       new NewTrackerRequest(LightTracker(None, name, vehicleId, "N/A", ZonedDateTime.now(), None))
     }
+}
+
+final case class UpdateVehicleRequest(data: Vehicle)
+
+object UpdateVehicleRequest {
+  implicit val decoder: Decoder[UpdateVehicleRequest] = deriveDecoder
 }
 
 final case class UpdateTrackerRequest(tracker: LightTracker)
