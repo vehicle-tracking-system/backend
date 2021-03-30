@@ -10,9 +10,9 @@ import zio.Task
 import zio.interop.catz._
 
 trait VehicleDAO {
-  def persist(vehicle: Vehicle): Task[Int]
+  def persist(vehicle: LightVehicle): Task[Vehicle]
 
-  def update(vehicle: Vehicle): Task[Int]
+  def update(vehicle: Vehicle): Task[Vehicle]
 
   def delete(vehicle: Vehicle): Task[Int]
 
@@ -26,17 +26,25 @@ trait VehicleDAO {
 }
 
 class DefaultVehicleDAO(transactor: Transactor[Task]) extends VehicleDAO {
-  override def persist(vehicle: Vehicle): Task[Int] = {
-    sql"""INSERT INTO VEHICLE
+  override def persist(vehicle: LightVehicle): Task[Vehicle] = {
+    for {
+      id <-
+        sql"""INSERT INTO VEHICLE
          (NAME) VALUES
-         (${vehicle.vehicle.name})""".update.run
-      .transact(transactor)
+         (${vehicle.name})""".update
+          .withUniqueGeneratedKeys[Long]("id")
+          .transact(transactor)
+      vehicle <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
+    } yield vehicle
   }
 
-  override def update(vehicle: Vehicle): Task[Int] = {
-    sql"""UPDATE VEHICLE SET
+  override def update(vehicle: Vehicle): Task[Vehicle] = {
+    for {
+      id <- sql"""UPDATE VEHICLE SET
           NAME = ${vehicle.vehicle.name}
-          WHERE ID = ${vehicle.vehicle.id}""".update.run.transact(transactor)
+          WHERE ID = ${vehicle.vehicle.id}""".update.withUniqueGeneratedKeys[Long]("id").transact(transactor)
+      vehicle <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
+    } yield vehicle
   }
 
   override def delete(vehicle: Vehicle): Task[Int] = {
@@ -78,12 +86,13 @@ class DefaultVehicleDAO(transactor: Transactor[Task]) extends VehicleDAO {
       .transact(transactor)
   }
 
-  private def mapToList(in: List[(LightVehicle, LightFleet)]): List[Vehicle] = in.groupBy(_._1).map(g => Vehicle(g._1, g._2.map(_._2))).toList
+  private def mapToList(in: List[(LightVehicle, Option[LightFleet])]): List[Vehicle] =
+    in.groupBy(_._1).map(g => Vehicle(g._1, g._2.filter(_._2.nonEmpty).map(_._2.get))).toList
 
   private def findBy(fra: Fragment, offset: Int, limit: Int): Task[List[Vehicle]] = {
-    (sql"""SELECT V.ID, V.NAME, F.ID, F.NAME FROM (SELECT ID, NAME FROM VEHICLE ORDER BY NAME DESC LIMIT $limit OFFSET $offset) V INNER JOIN VEHICLEFLEET VF on V.ID = VF.VEHICLE_ID INNER JOIN FLEET F on VF.FLEET_ID = F.ID"""
+    (sql"""SELECT V.ID, V.NAME, F.ID, F.NAME FROM (SELECT ID, NAME FROM VEHICLE ORDER BY NAME DESC LIMIT $limit OFFSET $offset) V LEFT JOIN VEHICLEFLEET VF on V.ID = VF.VEHICLE_ID LEFT JOIN FLEET F on VF.FLEET_ID = F.ID"""
       ++ fra)
-      .query[(LightVehicle, LightFleet)]
+      .query[(LightVehicle, Option[LightFleet])]
       .to[List]
       .transact(transactor)
       .map(mapToList)
