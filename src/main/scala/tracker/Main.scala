@@ -1,6 +1,7 @@
 package tracker
 
 import cats.effect.{Clock, Resource}
+import com.avast.sst.bundle.ZioServerApp
 import com.avast.sst.doobie.DoobieHikariModule
 import com.avast.sst.http4s.client.Http4sBlazeClientModule
 import com.avast.sst.http4s.client.monix.catnap.Http4sClientCircuitBreakerModule
@@ -18,7 +19,6 @@ import com.avast.sst.pureconfig.PureConfigModule
 import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
 import fs2.concurrent.Topic
 import org.http4s.server.Server
-import org.slf4j.LoggerFactory
 import slog4s.slf4j.Slf4jFactory
 import tracker.config.Configuration
 import tracker.dao._
@@ -32,30 +32,9 @@ import zio.interop.catz.implicits._
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext
 
-object Main extends CatsApp {
+object Main extends ZioServerApp {
 
-  case class MainResources(server: Resource[Task, Server[Task]], mqtt: Resource[Task, MqttModule.type])
-
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
-  override def run(args: List[String]): ZIO[ZEnv, Nothing, ExitCode] = {
-    program
-      .use { resources =>
-        for {
-          _ <- UIO.effectTotal(logger.info(s"Server started @ ${resources._1.address.getHostString}:${resources._1.address.getPort}"))
-          _ <- resources._2.make().use(_ => Task.unit)
-        } yield resources
-      }
-      .fold(
-        ex => {
-          logger.error("Server initialization failed!", ex)
-          ExitCode.failure
-        },
-        _ => ExitCode.success
-      )
-  }
-
-  def program: Resource[Task, (Server[Task], MqttModule)] = {
+  def program: Resource[Task, Server[Task]] = {
     for {
       configuration <- Resource.liftF(PureConfigModule.makeOrRaise[Task, Configuration])
       executorModule <- ExecutorModule.makeFromExecutionContext[Task](runtime.platform.executor.asEC)
@@ -124,9 +103,9 @@ object Main extends CatsApp {
         serverMetricsModule,
         configuration
       )
-      mqtt = new MqttModule(mqttService.processMessage, configuration, loggerFactory.make("mqtt-module"))
+      _ <- MqttModule.make(mqttService.processMessage, configuration, loggerFactory.make("mqtt-module"))
       server <- Http4sBlazeServerModule.make[Task](configuration.server, routingModule.router, executorModule.executionContext)
-    } yield (server, mqtt)
+    } yield server
   }
 
 }

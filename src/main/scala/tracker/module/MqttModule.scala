@@ -17,36 +17,32 @@ import zio.interop.catz.implicits._
 
 import scala.concurrent.duration._
 
-class MqttModule(
-    processMessage: Message => Task[Unit],
-    config: Configuration,
-    logger: Logger[Task]
-) {
-  val retryConfig: Custom[Task] = Custom[Task] {
-    RetryPolicies
-      .limitRetries[Task](config.mqtt.connectionRetries)
-      .join(RetryPolicies.fullJitter[Task](2.seconds))
-  }
+object MqttModule {
+  def make(processMessage: Message => Task[Unit], config: Configuration, logger: Logger[Task]): Resource[Task, MqttModule.type] = {
 
-  val transportConfig: TransportConfig[Task] = TransportConfig[Task](
-    config.mqtt.host,
-    config.mqtt.port,
-    tlsConfig = if (config.mqtt.ssl) Some(TLSConfig(TLSContextKind.System)) else None,
-    retryConfig = retryConfig,
-    traceMessages = false
-  )
+    val retryConfig: Custom[Task] = Custom[Task] {
+      RetryPolicies
+        .limitRetries[Task](config.mqtt.connectionRetries)
+        .join(RetryPolicies.fullJitter[Task](2.seconds))
+    }
 
-  val sessionConfig: SessionConfig = SessionConfig(
-    clientId = config.mqtt.subscriberName,
-    cleanSession = false,
-    user = config.mqtt.user,
-    password = config.mqtt.password,
-    keepAlive = config.mqtt.keepAliveSecs
-  )
+    val transportConfig: TransportConfig[Task] = TransportConfig[Task](
+      config.mqtt.host,
+      config.mqtt.port,
+      tlsConfig = if (config.mqtt.ssl) Some(TLSConfig(TLSContextKind.System)) else None,
+      retryConfig = retryConfig,
+      traceMessages = false
+    )
 
-  val topics = Vector(config.mqtt.topic -> AtLeastOnce)
+    val sessionConfig: SessionConfig = SessionConfig(
+      clientId = config.mqtt.subscriberName,
+      cleanSession = false,
+      user = config.mqtt.user,
+      password = config.mqtt.password,
+      keepAlive = config.mqtt.keepAliveSecs
+    )
 
-  def make(): Resource[Task, MqttModule.type] = {
+    val topics = Vector(config.mqtt.topic -> AtLeastOnce)
 
     Session[Task](transportConfig, sessionConfig).flatMap { session =>
       Resource(for {
@@ -71,7 +67,7 @@ class MqttModule(
             .compile
             .drain
 
-        _ <- sessionStatusStream.concurrently(subscriptionStream).interruptWhen(stopSignal).compile.drain.run
+        _ <- sessionStatusStream.concurrently(subscriptionStream).interruptWhen(stopSignal).compile.drain.fork
         _ <- waitForStart
       } yield {
 
@@ -98,5 +94,3 @@ class MqttModule(
     case _        => Task.unit
   }
 }
-
-object MqttModule
