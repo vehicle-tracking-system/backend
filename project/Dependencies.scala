@@ -1,6 +1,8 @@
 import sbt._
 
 object Dependencies {
+  val scalaCacheCats = "com.github.cb372" %% "scalacache-cats-effect" % Versions.scalaCache
+  val scalaCache = "com.github.cb372" %% "scalacache-caffeine" % Versions.scalaCache
   val scalapb = "com.thesamet.scalapb" %% "compilerplugin" % Versions.scalapb
   val mqttClient = "net.sigusr" %% "fs2-mqtt" % Versions.mqtt
   val fs2 = "co.fs2" %% "fs2-core" % Versions.fs2
@@ -36,8 +38,9 @@ object Dependencies {
   val sstMonixCatnapPureConfig = "com.avast" %% "sst-monix-catnap-pureconfig" % Versions.sst
   val testContainers = "com.dimafeng" %% "testcontainers-scala-scalatest" % Versions.testContainers
   val testContainersPostgres = "com.dimafeng" %% "testcontainers-scala-postgresql" % Versions.testContainers
-  val zio = "dev.zio" %% "zio" % "1.0.3"
-  val zioInteropCats = "dev.zio" %% "zio-interop-cats" % "2.2.0.1"
+  val zioTest = "dev.zio" %% "zio-test" % "1.0.5"
+  val zio = "dev.zio" %% "zio" % "1.0.5"
+  val zioInteropCats = "dev.zio" %% "zio-interop-cats" % "2.4.0.0"
 
   object Versions {
     val sst = "0.3.3"
@@ -54,6 +57,7 @@ object Dependencies {
     val fs2 = "2.5.0"
     val mqtt = "0.4.2"
     val scalapb = "0.11.0"
+    val scalaCache = "0.28.0"
   }
 
 }

@@ -13,8 +13,45 @@ dockerExposedPorts ++= Seq(8080)
 
 resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
 
+lazy val app = (project in file("app"))
+  .settings(commonSettings: _*)
+  .settings(
+    mainClass in assembly := Some("tracker.Main")
+  )
+
+lazy val utils = (project in file("utils"))
+  .settings(commonSettings: _*)
+  .settings(
+    assemblyJarName in assembly := "tracker-server.jar"
+  )
+
+assemblyMergeStrategy in assembly := {
+  case "module-info.class"                  => MergeStrategy.rename
+  case "scala-collection-compat.properties" => MergeStrategy.rename
+  case PathList("META-INF", xs @ _*) =>
+    (xs map { _.toLowerCase }) match {
+      case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
+        MergeStrategy.discard
+      case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
+        MergeStrategy.discard
+      case "plexus" :: xs =>
+        MergeStrategy.discard
+      case "services" :: xs =>
+        MergeStrategy.filterDistinctLines
+      case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
+        MergeStrategy.filterDistinctLines
+      case _ => MergeStrategy.deduplicate
+    }
+  case _ => MergeStrategy.deduplicate
+}
+
 lazy val commonSettings = BuildSettings.common ++ Seq(
+  version := "0.1-SNAPSHOT",
+  organization := "cz.cvut.fit",
+  scalaVersion := "2.13.3",
+  test in assembly := {},
   libraryDependencies ++= Seq(
+    Dependencies.scalaCache,
     Dependencies.mqttClient,
     Dependencies.fs2,
     Dependencies.slog4sAPI,

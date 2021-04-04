@@ -15,7 +15,8 @@ final case class MqttConfig(
     topic: String,
     readTimeout: FiniteDuration,
     connectionRetries: Int,
-    keepAliveSecs: Int
+    keepAliveSecs: Int,
+    newTrackThreshold: FiniteDuration
 )
 
 object MqttConfig {

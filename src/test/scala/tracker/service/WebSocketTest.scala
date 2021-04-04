@@ -38,25 +38,43 @@ class WebSocketTest extends AnyFlatSpec {
   "Position message" should "be serializable to JSON" in {
     val message: WebSocketMessage =
       WebSocketMessage.position(
-        Position(Some(1), 2, Some(1), 52.51, 50.087823, 14.430026, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")))
+        Position(
+          Some(1),
+          2,
+          1,
+          52.51,
+          50.087823,
+          14.430026,
+          ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")),
+          "sessionId234"
+        )
       )
 
     assert(
       message.asJson.noSpacesSortKeys equals
-        """{"msgType":"POSITION","payload":"{\"id\":1,\"isMoving\":false,\"latitude\":50.087823,\"longitude\":14.430026,\"speed\":52.51,\"timestamp\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"trackId\":1,\"vehicleId\":2}","token":null}"""
+        """{"msgType":"POSITION","payload":"{\"id\":1,\"isMoving\":false,\"latitude\":50.087823,\"longitude\":14.430026,\"sessionId\":\"sessionId234\",\"speed\":52.51,\"timestamp\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"trackId\":1,\"vehicleId\":2}","token":null}"""
     )
   }
 
   "Position message \"isMoving\"" should "be serializable to JSON" in {
     val message: WebSocketMessage =
       WebSocketMessage.position(
-        Position(Some(1), 2, Some(1), 52.51, 50.087823, 14.430026, ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague"))),
+        Position(
+          Some(1),
+          2,
+          1,
+          52.51,
+          50.087823,
+          14.430026,
+          ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")),
+          "sessionId234"
+        ),
         true
       )
 
     assert(
       message.asJson.noSpacesSortKeys equals
-        """{"msgType":"POSITION","payload":"{\"id\":1,\"isMoving\":true,\"latitude\":50.087823,\"longitude\":14.430026,\"speed\":52.51,\"timestamp\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"trackId\":1,\"vehicleId\":2}","token":null}"""
+        """{"msgType":"POSITION","payload":"{\"id\":1,\"isMoving\":true,\"latitude\":50.087823,\"longitude\":14.430026,\"sessionId\":\"sessionId234\",\"speed\":52.51,\"timestamp\":\"2021-02-25T00:00:00+01:00[Europe/Prague]\",\"trackId\":1,\"vehicleId\":2}","token":null}"""
     )
   }
 

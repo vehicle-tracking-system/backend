@@ -104,13 +104,19 @@ class Http4sRoutingModule(
       withRoles(Reader) {
         handleGetVehiclePositionHistory(request.req)
       }(request)
-    case request @ POST -> Root / "tracks" as _ =>
+    case request @ GET -> Root / "tracks" :? OptionalVehicleQueryParamMatcher(vehicleId) +& PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(
+          pageSize
+        ) as _ =>
       withRoles(Reader) {
-        handleGetAllTracks(request.req)
+        handleGetAllTracks(vehicleId, page, pageSize)
       }(request)
     case request @ GET -> Root / "track" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
-        trackService.get(id).flatMap(track => Ok(track))
+        trackService.get(id).flatMap(Ok(_))
+      }(request)
+    case request @ GET -> Root / "track" / "positions" :? IdQueryParamMatcher(id) as _ =>
+      withRoles(Reader) {
+        trackService.getPositions(id).flatMap(Ok(_))
       }(request)
     case request @ GET -> Root / "trackers" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
       withRoles(Reader) {
@@ -251,11 +257,10 @@ class Http4sRoutingModule(
     }
   }
 
-  private def handleGetAllTracks(req: Request[Task]): Task[Response[Task]] = {
-    req
-      .as[PageRequest]
-      .flatMap(trackService.getAll)
-      .flatMap(t => Ok(t.asJson))
+  private def handleGetAllTracks(vehicleId: Option[Long], page: Option[Int], pageSize: Option[Int]): Task[Response[Task]] = {
+    vehicleId.fold(trackService.getAll(page, pageSize).flatMap(t => Ok(t.asJson)))(id =>
+      trackService.getByVehicle(id, page, pageSize).flatMap(t => Ok(t.asJson))
+    )
   }
 
   private def handleNewTracker(req: Request[Task]): Task[Response[Task]] = {

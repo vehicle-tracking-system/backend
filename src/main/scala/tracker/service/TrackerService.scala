@@ -69,6 +69,13 @@ class TrackerService(trackerDAO: TrackerDAO, jwtConfig: JwtConfig, logger: Logge
 
   }
 
+  def verifyAccessToken(token: String): Task[Boolean] = {
+    getByToken(token).map {
+      case Some(_) => true
+      case None    => false
+    }
+  }
+
   private def generateAccessToken(trackerId: Long): String = {
     AccessTokenBuilder.createUnlimitedToken(
       AccessTokenPayload(trackerId, Set(Roles.Tracker)),

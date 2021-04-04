@@ -49,9 +49,10 @@ object PositionRequest {
       speed <- c.downField("speed").as[Double]
       latitude <- c.downField("latitude").as[Double]
       longitude <- c.downField("longitude").as[Double]
+      sessionId <- c.downField("sessionId").as[String]
     } yield {
       new PositionRequest(
-        Position(None, vehicleId, Some(trackId), speed, latitude, longitude)
+        Position(None, vehicleId, trackId, speed, latitude, longitude, sessionId = sessionId)
       )
     }
 }
@@ -105,19 +106,15 @@ object NewFleetRequest {
       )
     }
 }
-final case class NewTrackRequest(position: Position, track: Track)
+final case class NewTrackRequest(track: Track)
 
 object NewTrackRequest {
   implicit val decoder: Decoder[NewTrackRequest] = (c: HCursor) =>
     for {
       vehicleId <- c.downField("vehicleId").as[Long]
-      speed <- c.downField("speed").as[Double]
-      latitude <- c.downField("latitude").as[Double]
-      longitude <- c.downField("longitude").as[Double]
     } yield {
       new NewTrackRequest(
-        Position(None, vehicleId, None, speed, latitude, longitude),
-        Track(None, vehicleId)
+        Track(LightTrack(None, vehicleId), LightVehicle(Some(vehicleId), ""))
       )
     }
 }

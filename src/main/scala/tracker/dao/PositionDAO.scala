@@ -25,14 +25,16 @@ trait PositionDAO {
   def findVehicleHistory(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Position]]
 
   def findLastVehiclePosition(vehicleId: Long): Task[Option[Position]]
+
+  def findByTrack(trackId: Long): Task[List[Position]]
 }
 
 class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
   override def persist(position: Position): Task[Position] = {
     for {
       id <-
-        sql"""INSERT INTO POSITION (VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP) VALUES
-         (${position.vehicleId}, ${position.trackId}, ${position.speed}, ${position.latitude}, ${position.longitude}, ${position.timestamp})""".update
+        sql"""INSERT INTO POSITION (VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP, SESSION_ID) VALUES
+         (${position.vehicleId}, ${position.trackId}, ${position.speed}, ${position.latitude}, ${position.longitude}, ${position.timestamp}, ${position.sessionId})""".update
           .withUniqueGeneratedKeys[Long]("id")
           .transact(transactor)
       position <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
@@ -40,8 +42,8 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
   }
 
   override def persistList(positions: List[Position]): Task[Int] = {
-    val positionsInfo: List[PositionInfo] = positions.map(p => (p.vehicleId, p.trackId, p.speed, p.latitude, p.longitude, p.timestamp))
-    val sql = """INSERT INTO POSITION (VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP) VALUES (?, ?, ?, ?, ?, ?)"""
+    val positionsInfo: List[PositionInfo] = positions.map(p => (p.vehicleId, p.trackId, p.speed, p.latitude, p.longitude, p.timestamp, p.sessionId))
+    val sql = """INSERT INTO POSITION (VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP, SESSION_ID) VALUES (?, ?, ?, ?, ?, ?, ?)"""
     Update[PositionInfo](sql).updateMany(positionsInfo).transact(transactor)
   }
 
@@ -53,7 +55,8 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
          SPEED = ${position.speed},
          LATITUDE = ${position.latitude},
          LONGITUDE = ${position.longitude},
-         TIMESTAMP = ${position.timestamp} WHERE ID = ${position.id}""".update.withUniqueGeneratedKeys[Long]("id").transact(transactor)
+         TIMESTAMP = ${position.timestamp},
+         SESSION_ID = ${position.sessionId} WHERE ID = ${position.id}""".update.withUniqueGeneratedKeys[Long]("id").transact(transactor)
       position <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
     } yield position
   }
@@ -80,8 +83,12 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
     }
   }
 
+  override def findByTrack(trackId: Long): Task[List[Position]] = {
+    findBy(fr"""WHERE TRACK_ID = $trackId""", 0, Int.MaxValue)
+  }
+
   private def findBy(fra: Fragment, offset: Int, limit: Int): Task[List[Position]] = {
-    (sql"""SELECT ID, VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP FROM POSITION """
+    (sql"""SELECT ID, VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP, SESSION_ID FROM POSITION """
       ++ fra
       ++ sql"""ORDER BY TIMESTAMP DESC LIMIT $limit OFFSET $offset""")
       .query[Position]
@@ -89,7 +96,7 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
       .transact(transactor)
   }
 
-  type PositionInfo = (Long, Option[Long], Double, Double, Double, ZonedDateTime)
+  private type PositionInfo = (Long, Long, Double, Double, Double, ZonedDateTime, String)
 }
 
 object PositionDAO {

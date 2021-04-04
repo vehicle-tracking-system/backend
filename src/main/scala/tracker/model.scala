@@ -140,19 +140,31 @@ object VehicleFleet {
 final case class Position(
     id: Option[Long],
     vehicleId: Long,
-    trackId: Option[Long],
+    trackId: Long,
     speed: Double,
     latitude: Double,
     longitude: Double,
-    timestamp: ZonedDateTime = ZonedDateTime.now()
-)
+    timestamp: ZonedDateTime = ZonedDateTime.now(),
+    sessionId: String
+) {
+  lazy val ID: Long = id.getOrElse(throw new IllegalStateException("Position without identifier"))
+}
 
 object Position {
   implicit val encoder: Encoder[Position] = deriveEncoder
   implicit val decoder: Decoder[Position] = deriveDecoder
 }
 
-final case class Track(id: Option[Long], vehicleId: Long, timestamp: ZonedDateTime = ZonedDateTime.now())
+final case class LightTrack(id: Option[Long], vehicleId: Long, timestamp: ZonedDateTime = ZonedDateTime.now()) {
+  lazy val ID: Long = id.getOrElse(throw new IllegalStateException("LightTrack without identifier"))
+}
+
+final case class Track(track: LightTrack, vehicle: LightVehicle)
+
+object LightTrack {
+  implicit val encoder: Encoder[LightTrack] = deriveEncoder
+  implicit val decoder: Decoder[LightTrack] = deriveDecoder
+}
 
 object Track {
   implicit val encoder: Encoder[Track] = deriveEncoder
@@ -166,7 +178,9 @@ final case class LightTracker(
     token: String,
     createdAt: ZonedDateTime = ZonedDateTime.now(),
     deletedAt: Option[ZonedDateTime]
-)
+) {
+  lazy val ID: Long = id.getOrElse(throw new IllegalStateException("LightTracker without identifier"))
+}
 
 final case class Tracker(tracker: LightTracker, vehicle: LightVehicle)
 
