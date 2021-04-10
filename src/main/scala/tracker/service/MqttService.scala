@@ -5,7 +5,7 @@ import fs2.concurrent.Topic
 import net.sigusr.mqtt.api.Message
 import protocol.tracker._
 import slog4s.{Logger, LoggerFactory}
-import tracker.{Position, Role, Roles, WebSocketMessage}
+import tracker.{Position, PositionsRequest, Role, Roles, WebSocketMessage}
 import tracker.config.Configuration
 import tracker.security.{AccessToken, AccessTokenParser}
 import zio.{IO, Task}
@@ -75,12 +75,12 @@ class MqttService(
     }
   }
 
-  private def handleNewPosition(token: AccessToken, sessionId: String, trackId: Long, report: Report): Either[String, Task[Int]] = {
+  private def handleNewPosition(token: AccessToken, sessionId: String, trackId: Long, report: Report): Either[String, Task[Position]] = {
     if (token.clientRoles.contains(Role.toString(Roles.Tracker))) {
       val positions = report.positions
         .map(tp => toPosition(report.vehicleId, sessionId, trackId, tp))
         .toList
-      Right(positionService.persist(positions))
+      Right(positionService.persist(PositionsRequest(report.vehicleId, positions)))
     } else {
       Left("Tracker does not have required role")
     }

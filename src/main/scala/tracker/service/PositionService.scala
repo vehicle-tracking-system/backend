@@ -2,12 +2,15 @@ package tracker.service
 
 import cats.implicits.catsSyntaxFlatMapOps
 import slog4s.{Logger, LoggerFactory}
-import tracker.{Position, PositionRequest, VehiclePositionHistoryRequest, VehiclePositionsRequest}
+import tracker.{Position, PositionRequest, PositionsRequest, VehiclePositionHistoryRequest, VehiclePositionsRequest}
 import tracker.dao.PositionDAO
+import tracker.utils.CaffeineAtomicCache
 import zio.Task
 import zio.interop.catz._
 
-class PositionService(positionDAO: PositionDAO, logger: Logger[Task]) {
+import java.util.NoSuchElementException
+
+class PositionService(positionDAO: PositionDAO, logger: Logger[Task], cache: CaffeineAtomicCache[Long, Position]) {
   def get(id: Long): Task[Option[Position]] = positionDAO.find(id)
 
   def getByVehicle(request: VehiclePositionsRequest): Task[List[Position]] = {
@@ -16,14 +19,19 @@ class PositionService(positionDAO: PositionDAO, logger: Logger[Task]) {
   }
 
   def persist(request: PositionRequest): Task[Position] = {
-    request.position.id match {
-      case Some(_) => positionDAO.update(request.position)
-      case None    => positionDAO.persist(request.position)
+    cache.update(request.position.vehicleId) {
+      request.position.id match {
+        case Some(_) => positionDAO.update(request.position)
+        case None    => positionDAO.persist(request.position)
+      }
     }
   }
 
-  def persist(positions: List[Position]): Task[Int] = {
-    positionDAO.persistList(positions)
+  def persist(request: PositionsRequest): Task[Position] = {
+    val sortedPositions: List[Position] = request.positions.filter(p => p.vehicleId == request.vehicleId).sortBy(_.timestamp)
+    cache.update(request.vehicleId) {
+      positionDAO.persistList(request.positions) >> Task(sortedPositions.last)
+    }
   }
 
   def getVehiclePositionHistory(request: VehiclePositionHistoryRequest): Task[List[Position]] = {
@@ -31,13 +39,31 @@ class PositionService(positionDAO: PositionDAO, logger: Logger[Task]) {
       positionDAO.findVehicleHistory(request.vehicleId, request.since, request.until)
   }
 
-  def getLastVehiclePosition(vehicleId: Long): Task[Option[Position]] = { positionDAO.findLastVehiclePosition(vehicleId) }
+  def getLastVehiclePosition(vehicleId: Long): Task[Option[Position]] = {
+    val position = for {
+      cachedPosition <- cache.get(vehicleId)
+      res <-
+        cachedPosition
+          .fold(
+            cache
+              .update(vehicleId)(positionDAO.findLastVehiclePosition(vehicleId).someOrFail(new NoSuchElementException))
+          )(p => Task(p))
+    } yield res
+    position.fold(
+      {
+        case _: NoSuchElementException => None
+        case e                         => throw new Error(e.toString)
+      },
+      Some(_)
+    )
+  }
 }
 
 object PositionService {
   def apply(
       positionDAO: PositionDAO,
-      loggerFactory: LoggerFactory[Task]
+      loggerFactory: LoggerFactory[Task],
+      cache: CaffeineAtomicCache[Long, Position]
   ): PositionService =
-    new PositionService(positionDAO, loggerFactory.make("position-service"))
+    new PositionService(positionDAO, loggerFactory.make("position-service"), cache)
 }

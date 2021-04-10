@@ -28,8 +28,8 @@ class TrackService(
 
   def getPositions(trackId: Long): Task[List[Position]] = {
     for {
+      _ <- logger.debug(s"Getting positions of track $trackId")
       positions <- positionDAO.findByTrack(trackId)
-      _ <- logger.debug(positions.toString())
     } yield positions
   }
 

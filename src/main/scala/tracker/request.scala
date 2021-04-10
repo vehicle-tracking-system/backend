@@ -57,6 +57,8 @@ object PositionRequest {
     }
 }
 
+final case class PositionsRequest(vehicleId: Long, positions: List[Position])
+
 final case class PageRequest(page: Int, pageSize: Int)
 
 object PageRequest {

@@ -47,10 +47,10 @@ assemblyMergeStrategy in assembly := {
 
 lazy val commonSettings = BuildSettings.common ++ Seq(
   version := "0.1-SNAPSHOT",
-  organization := "cz.cvut.fit",
   scalaVersion := "2.13.3",
   test in assembly := {},
   libraryDependencies ++= Seq(
+    Dependencies.scalaCacheCats,
     Dependencies.scalaCache,
     Dependencies.mqttClient,
     Dependencies.fs2,
@@ -68,6 +68,7 @@ lazy val commonSettings = BuildSettings.common ++ Seq(
     Dependencies.jwtCirce,
     Dependencies.logbackClassic,
     Dependencies.scalaTest % Test,
+    Dependencies.zioTest % Test,
     Dependencies.testContainers % Test,
     Dependencies.testContainersPostgres % Test
   ),

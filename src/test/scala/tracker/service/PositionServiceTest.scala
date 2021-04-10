@@ -9,6 +9,7 @@ import zio.{Task, _}
 import zio.interop.catz._
 import org.scalatest._
 import matchers.should.Matchers._
+import tracker.utils.CaffeineAtomicCache
 
 import java.time.{ZoneId, ZonedDateTime}
 
@@ -72,8 +73,9 @@ class PositionServiceTest extends AnyFlatSpec {
   }
 
   val positionDAO: PositionDAOTest = new PositionDAOTest(List.empty)
+  val mockedCache: CaffeineAtomicCache[Long, Position] = runtime.unsafeRun(CaffeineAtomicCache.make[Long, Position](loggerFactory))
   val mockedPositionService: PositionService =
-    PositionService(positionDAO, loggerFactory)
+    PositionService(positionDAO, loggerFactory, mockedCache)
 
   "Position" should "be serializable to JSON without ID" in {
     positionDAO.clear()

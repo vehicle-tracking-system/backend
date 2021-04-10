@@ -62,7 +62,7 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
   }
 
   override def find(id: Long): Task[Option[Position]] = {
-    sql"""SELECT ID, VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP FROM POSITION WHERE ID = $id"""
+    sql"""SELECT ID, VEHICLE_ID, TRACK_ID, SPEED, LATITUDE, LONGITUDE, TIMESTAMP, SESSION_ID FROM POSITION WHERE ID = $id"""
       .query[Position]
       .option
       .transact(transactor)
