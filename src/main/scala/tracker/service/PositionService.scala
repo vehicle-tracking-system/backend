@@ -57,6 +57,8 @@ class PositionService(positionDAO: PositionDAO, logger: Logger[Task], cache: Caf
       Some(_)
     )
   }
+
+  def getActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]] = positionDAO.findActiveDays(vehicleId, month, year)
 }
 
 object PositionService {

@@ -142,6 +142,13 @@ class Http4sRoutingModule(
       withRoles(Editor) {
         handleRevokeTrackerToken(request.req)
       }(request)
+    case request @ GET -> Root / "vehicle" / "active"
+        :? IdQueryParamMatcher(id)
+        +& MonthQueryParamMatcher(month)
+        +& YearQueryParamMatcher(year) as _ =>
+      withRoles(Reader) {
+        positionService.getActiveDays(id, month, year).flatMap(days => Ok(days.asJson))
+      }(request)
   }
 
   private val routes = HttpRoutes.of[Task] {

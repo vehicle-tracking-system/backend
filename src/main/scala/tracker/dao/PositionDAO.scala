@@ -27,6 +27,8 @@ trait PositionDAO {
   def findLastVehiclePosition(vehicleId: Long): Task[Option[Position]]
 
   def findByTrack(trackId: Long): Task[List[Position]]
+
+  def findActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]]
 }
 
 class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
@@ -85,6 +87,17 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
 
   override def findByTrack(trackId: Long): Task[List[Position]] = {
     findBy(fr"""WHERE TRACK_ID = $trackId""", 0, Int.MaxValue)
+  }
+
+  override def findActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]] = {
+    sql"""SELECT DAY_OF_MONTH(P.TIMESTAMP) as DAY
+         |FROM (SELECT TIMESTAMP FROM POSITION WHERE VEHICLE_ID = $vehicleId GROUP BY TIMESTAMP) P
+         |WHERE MONTH(P.TIMESTAMP) = $month AND YEAR(P.TIMESTAMP) = $year
+         |GROUP BY DAY
+         |""".stripMargin
+      .query[Int]
+      .to[List]
+      .transact(transactor)
   }
 
   private def findBy(fra: Fragment, offset: Int, limit: Int): Task[List[Position]] = {

@@ -9,3 +9,7 @@ object OptionalVehicleQueryParamMatcher extends OptionalQueryParamDecoderMatcher
 object PageQueryParamMatcher extends OptionalQueryParamDecoderMatcher[Int]("page")
 
 object PageSizeQueryParamMatcher extends OptionalQueryParamDecoderMatcher[Int]("pageSize")
+
+object MonthQueryParamMatcher extends QueryParamDecoderMatcher[Int]("month")
+
+object YearQueryParamMatcher extends QueryParamDecoderMatcher[Int]("year")

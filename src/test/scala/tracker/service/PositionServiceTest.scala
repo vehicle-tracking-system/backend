@@ -70,6 +70,8 @@ class PositionServiceTest extends AnyFlatSpec {
     override def persistList(positions: List[Position]): Task[Int] = throw new NotImplementedError()
 
     override def findByTrack(trackId: Long): Task[List[Position]] = throw new NotImplementedError()
+
+    override def findActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]] = throw new NotImplementedError()
   }
 
   val positionDAO: PositionDAOTest = new PositionDAOTest(List.empty)
