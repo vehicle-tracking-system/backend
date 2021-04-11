@@ -12,9 +12,11 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.server.Router
 import org.http4s.server.middleware.CORS
 import slog4s.LoggerFactory
-import tracker.{Role, User, _}
+import tracker.{User, _}
 import tracker.Roles._
 import tracker.config.Configuration
+import tracker.module.routes.GPX
+import tracker.module.routes.RoutesImplicits._
 import tracker.security.{AuthJwtMiddleware, DefaultAccessTokenParser}
 import tracker.service._
 import zio.Task
@@ -41,114 +43,114 @@ class Http4sRoutingModule(
   private val authedRoutes: AuthedRoutes[User, Task] = AuthedRoutes.of {
     case GET -> Root / "auth" as user => Ok(s"User: $user")
     case request @ GET -> Root / "withRole" as _ =>
-      withRoles(Admin) {
+      request.withRoles(Admin) {
         Ok("ok")
-      }(request)
+      }
     case request @ POST -> Root / "user" / "new" as _ =>
-      withRoles(Admin) {
+      request.withRoles(Admin) {
         handleNewUser(request.req)
-      }(request)
+      }
     case request @ POST -> Root / "user" as _ =>
-      withRoles(Admin) {
+      request.withRoles(Admin) {
         handleUpdateUser(request.req)
-      }(request)
+      }
     case request @ GET -> Root / "users" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         userService.getAll(page, pageSize).flatMap(u => Ok(u.asJson))
-      }(request)
+      }
     case request @ GET -> Root / "user" :? IdQueryParamMatcher(id) as _ =>
-      withRoles(Admin) {
+      request.withRoles(Admin) {
         handleGetUser(id)
-      }(request)
+      }
     case request @ GET -> Root / "vehicles" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         vehicleService.getAll(page, pageSize).flatMap(p => Ok(p.asJson))
-      }(request)
+      }
     case request @ GET -> Root / "vehicle" :? IdQueryParamMatcher(id) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         handleGetVehicle(id)
-      }(request)
+      }
     case request @ POST -> Root / "vehicle" as _ =>
-      withRoles(Editor) {
+      request.withRoles(Editor) {
         handleUpdateVehicle(request.req)
-      }(request)
+      }
     case request @ POST -> Root / "vehicle" / "new" as _ =>
-      withRoles(Editor) {
+      request.withRoles(Editor) {
         handleNewVehicle(request.req)
-      }(request)
+      }
     case request @ GET -> Root / "fleet" :? IdQueryParamMatcher(id) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         handleGetFleet(id)
-      }(request)
+      }
     case request @ POST -> Root / "fleet" / "new" as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         handleNewFleet(request.req)
-      }(request)
+      }
     case request @ GET -> Root / "fleets" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         fleetService.getAll(page, pageSize).flatMap(t => Ok(t.asJson))
-      }(request)
+      }
     case request @ POST -> Root / "position" / "new" as _ =>
-      withRoles(Editor) {
+      request.withRoles(Editor) {
         handleNewPosition(request.req)
-      }(request)
+      }
     case request @ POST -> Root / "vehicle" / "positions" as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         handleGetVehiclePositions(request.req)
-      }(request)
+      }
     case request @ GET -> Root / "vehicle" / "position" :? IdQueryParamMatcher(id) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         handleGetLastVehiclePosition(id)
-      }(request)
+      }
     case request @ POST -> Root / "vehicle" / "history" as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         handleGetVehiclePositionHistory(request.req)
-      }(request)
+      }
     case request @ GET -> Root / "tracks" :? OptionalVehicleQueryParamMatcher(vehicleId) +& PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(
           pageSize
         ) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         handleGetAllTracks(vehicleId, page, pageSize)
-      }(request)
+      }
     case request @ GET -> Root / "track" :? IdQueryParamMatcher(id) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         trackService.get(id).flatMap(Ok(_))
-      }(request)
+      }
     case request @ GET -> Root / "track" / "positions" :? IdQueryParamMatcher(id) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         trackService.getPositions(id).flatMap(_.fold(NotFound())(p => Ok(p)))
-      }(request)
+      }
     case request @ GET -> Root / "trackers" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         trackerService.getAll(page, pageSize).flatMap(t => Ok(t.asJson))
-      }(request)
+      }
     case request @ GET -> Root / "tracker" :? IdQueryParamMatcher(id) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         trackerService.get(id).flatMap(_.fold(NotFound())(Ok(_)))
-      }(request)
+      }
     case request @ POST -> Root / "tracker" / "new" as _ =>
-      withRoles(Editor) {
+      request.withRoles(Editor) {
         handleNewTracker(request.req)
-      }(request)
+      }
     case request @ POST -> Root / "tracker" as _ =>
-      withRoles(Editor) {
+      request.withRoles(Editor) {
         handleUpdateTracker(request.req)
-      }(request)
+      }
     case request @ POST -> Root / "tracker" / "delete" as _ =>
-      withRoles(Editor) {
+      request.withRoles(Editor) {
         handleDeleteTracker(request.req)
-      }(request)
+      }
     case request @ POST -> Root / "tracker" / "revoke" as _ =>
-      withRoles(Editor) {
+      request.withRoles(Editor) {
         handleRevokeTrackerToken(request.req)
-      }(request)
+      }
     case request @ GET -> Root / "vehicle" / "active"
         :? IdQueryParamMatcher(id)
         +& MonthQueryParamMatcher(month)
         +& YearQueryParamMatcher(year) as _ =>
-      withRoles(Reader) {
+      request.withRoles(Reader) {
         positionService.getActiveDays(id, month, year).flatMap(days => Ok(days.asJson))
-      }(request)
+      }
   }
 
   private val routes = HttpRoutes.of[Task] {
@@ -156,7 +158,7 @@ class Http4sRoutingModule(
     case request @ POST -> Root / "login" => handleLogin(request)
     case GET -> Root / "ws"               => WebSocketService(loggerFactory, DefaultAccessTokenParser, topic, vehicleService, config).flatMap(_.build)
 
-  } <+> authMiddleware(authedRoutes)
+  } <+> authMiddleware(authedRoutes) <+> authMiddleware(new GPX(positionService).routes)
 
   val router: HttpApp[Task] = Http4sRouting.make {
     serverMetrics {
@@ -295,17 +297,5 @@ class Http4sRoutingModule(
       .as[UpdateTrackerRequest]
       .flatMap(trackerService.updateAccessToken)
       .flatMap(t => Ok(t.asJson))
-  }
-
-  private def withRoles(
-      roles: Role*
-  )(f: Task[Response[Task]])(request: AuthedRequest[Task, User]): Task[Response[Task]] = {
-    val user = request.context
-
-    if (roles.toSet.subsetOf(user.roles) || user.roles.contains(Admin)) {
-      f
-    } else {
-      Forbidden()
-    }
   }
 }

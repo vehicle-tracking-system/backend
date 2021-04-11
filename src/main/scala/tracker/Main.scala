@@ -1,6 +1,6 @@
 package tracker
 
-import cats.effect.{Clock, Resource}
+import cats.effect.{Blocker, Clock, Resource}
 import com.avast.sst.bundle.ZioServerApp
 import com.avast.sst.doobie.DoobieHikariModule
 import com.avast.sst.http4s.client.Http4sBlazeClientModule
@@ -68,7 +68,8 @@ object Main extends ZioServerApp {
           )
 
       loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
-      gpxFileBuilder = GPXFileGeneratorBuilder(configuration.volumes)
+      blocker <- Blocker[Task]
+      gpxFileBuilder = new GPXFileGeneratorBuilder(configuration.volumes, blocker)
       topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.heartbeat))
       lastPositionCache <- Resource.liftF(CaffeineAtomicCache.make[Long, Position](loggerFactory))
 

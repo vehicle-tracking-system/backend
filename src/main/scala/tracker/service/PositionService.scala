@@ -65,15 +65,10 @@ class PositionService(
 
   def getActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]] = positionDAO.findActiveDays(vehicleId, month, year)
 
-  def generateGPX(trackId: Long): Task[Boolean] =
-    for {
-      positions <- positionDAO.findByTrack(trackId)
-      res <- positions.fold(Task(false))(p =>
-        Task {
-          gpxFileGenerator.make(trackId.toString, p).save()
-        } >> Task(true)
-      )
-    } yield res
+  def generateGPX(trackId: Long): Task[Option[fs2.Stream[Task, Byte]]] =
+    positionDAO
+      .findByTrack(trackId)
+      .map(_.map(gpxFileGenerator.make(trackId.toString, _).generate.stream()))
 }
 
 object PositionService {

@@ -1,24 +1,27 @@
 package tracker.service
 
 import cats.data.NonEmptyList
+import cats.effect.Blocker
 import io.circe.syntax.EncoderOps
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers._
 import slog4s.slf4j.Slf4jFactory
 import tracker.{Position, PositionRequest}
+import tracker.config.VolumesConfig
 import tracker.dao.PositionDAO
+import tracker.utils.{CaffeineAtomicCache, GPXFileGeneratorBuilder}
 import zio.{Task, _}
 import zio.interop.catz._
-import org.scalatest._
-import matchers.should.Matchers._
-import tracker.config.VolumesConfig
-import tracker.utils.{CaffeineAtomicCache, GPXFileGeneratorBuilder}
 
 import java.time.{ZoneId, ZonedDateTime}
+import java.util.concurrent.Executors
 
 class PositionServiceTest extends AnyFlatSpec {
   private val loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
   private val runtime: Runtime[zio.ZEnv] = Runtime.default
-  private val gpxBuilder = GPXFileGeneratorBuilder.apply(VolumesConfig("", ""))
+  private val blockingPool = Executors.newCachedThreadPool()
+  private val blocker = Blocker.liftExecutorService(blockingPool)
+  private val gpxBuilder = new GPXFileGeneratorBuilder(VolumesConfig("", ""), blocker)
 
   class PositionDAOTest(var positions: List[Position]) extends PositionDAO {
 
