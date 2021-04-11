@@ -21,18 +21,18 @@ object StaticFileRoutingModule extends Http4sDsl[Task] {
     HttpRoutes.of[Task] {
       case req if supportedStaticExtensions.exists(req.pathInfo.endsWith) =>
         StaticFile
-          .fromFile(new File(config.frontend + req.pathInfo), blocker, Some(req))
+          .fromFile(new File(config.volumes.frontend + req.pathInfo), blocker, Some(req))
           .map(_.putHeaders())
           .orElse(
             OptionT
-              .fromOption[Task](Option(this.getClass.getResource(config.frontend + req.pathInfo)))
+              .fromOption[Task](Option(this.getClass.getResource(config.volumes.frontend + req.pathInfo)))
               .flatMap(StaticFile.fromURL(_, blocker, Some(req)))
           )
           .getOrElseF(NotFound())
 
       case request =>
         StaticFile
-          .fromFile(new File(config.frontend + "index.html"), blocker, Some(request))
+          .fromFile(new File(config.volumes.frontend + "index.html"), blocker, Some(request))
           .getOrElseF(NotFound())
     }
 }

@@ -2,15 +2,20 @@ package tracker.service
 
 import cats.implicits.catsSyntaxFlatMapOps
 import slog4s.{Logger, LoggerFactory}
-import tracker.{Position, PositionRequest, PositionsRequest, VehiclePositionHistoryRequest, VehiclePositionsRequest}
+import tracker._
 import tracker.dao.PositionDAO
-import tracker.utils.CaffeineAtomicCache
+import tracker.utils.{CaffeineAtomicCache, GPXFileGeneratorBuilder}
 import zio.Task
 import zio.interop.catz._
 
 import java.util.NoSuchElementException
 
-class PositionService(positionDAO: PositionDAO, logger: Logger[Task], cache: CaffeineAtomicCache[Long, Position]) {
+class PositionService(
+    positionDAO: PositionDAO,
+    logger: Logger[Task],
+    cache: CaffeineAtomicCache[Long, Position],
+    gpxFileGenerator: GPXFileGeneratorBuilder
+) {
   def get(id: Long): Task[Option[Position]] = positionDAO.find(id)
 
   def getByVehicle(request: VehiclePositionsRequest): Task[List[Position]] = {
@@ -59,13 +64,24 @@ class PositionService(positionDAO: PositionDAO, logger: Logger[Task], cache: Caf
   }
 
   def getActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]] = positionDAO.findActiveDays(vehicleId, month, year)
+
+  def generateGPX(trackId: Long): Task[Boolean] =
+    for {
+      positions <- positionDAO.findByTrack(trackId)
+      res <- positions.fold(Task(false))(p =>
+        Task {
+          gpxFileGenerator.make(trackId.toString, p).save()
+        } >> Task(true)
+      )
+    } yield res
 }
 
 object PositionService {
   def apply(
       positionDAO: PositionDAO,
       loggerFactory: LoggerFactory[Task],
-      cache: CaffeineAtomicCache[Long, Position]
+      cache: CaffeineAtomicCache[Long, Position],
+      gpxModule: GPXFileGeneratorBuilder
   ): PositionService =
-    new PositionService(positionDAO, loggerFactory.make("position-service"), cache)
+    new PositionService(positionDAO, loggerFactory.make("position-service"), cache, gpxModule)
 }

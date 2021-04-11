@@ -116,7 +116,7 @@ class Http4sRoutingModule(
       }(request)
     case request @ GET -> Root / "track" / "positions" :? IdQueryParamMatcher(id) as _ =>
       withRoles(Reader) {
-        trackService.getPositions(id).flatMap(Ok(_))
+        trackService.getPositions(id).flatMap(_.fold(NotFound())(p => Ok(p)))
       }(request)
     case request @ GET -> Root / "trackers" :? PageQueryParamMatcher(page) +& PageSizeQueryParamMatcher(pageSize) as _ =>
       withRoles(Reader) {

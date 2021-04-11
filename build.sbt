@@ -50,6 +50,7 @@ lazy val commonSettings = BuildSettings.common ++ Seq(
   scalaVersion := "2.13.3",
   test in assembly := {},
   libraryDependencies ++= Seq(
+    Dependencies.jpx,
     Dependencies.scalaCacheCats,
     Dependencies.scalaCache,
     Dependencies.mqttClient,

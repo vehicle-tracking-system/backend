@@ -25,7 +25,7 @@ import tracker.dao._
 import tracker.module.{Http4sRoutingModule, MqttModule}
 import tracker.security.DefaultAccessTokenParser
 import tracker.service._
-import tracker.utils.CaffeineAtomicCache
+import tracker.utils.{CaffeineAtomicCache, GPXFileGeneratorBuilder}
 import zio._
 import zio.interop.catz._
 import zio.interop.catz.implicits._
@@ -68,6 +68,7 @@ object Main extends ZioServerApp {
           )
 
       loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
+      gpxFileBuilder = GPXFileGeneratorBuilder(configuration.volumes)
       topic <- Resource.liftF(Topic[Task, WebSocketMessage](WebSocketMessage.heartbeat))
       lastPositionCache <- Resource.liftF(CaffeineAtomicCache.make[Long, Position](loggerFactory))
 
@@ -82,7 +83,7 @@ object Main extends ZioServerApp {
       userService = UserService(userDAO, configuration.jwt, loggerFactory)
       fleetService = FleetService(fleetDAO)
       vehicleService = VehicleService(vehicleDAO, vehicleFleetDAO)
-      positionService = PositionService(positionDAO, loggerFactory, lastPositionCache)
+      positionService = PositionService(positionDAO, loggerFactory, lastPositionCache, gpxFileBuilder)
       trackService = TrackService(trackDAO, positionDAO, loggerFactory)
       trackerService = TrackerService(trackerDAO, userDAO, configuration.jwt, loggerFactory)
       mqttService = MqttService(loggerFactory, trackerService, positionService, trackService, topic, DefaultAccessTokenParser, configuration)

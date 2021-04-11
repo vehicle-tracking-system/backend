@@ -1,5 +1,6 @@
 package tracker.service
 
+import cats.data.NonEmptyList
 import slog4s.{Logger, LoggerFactory}
 import tracker._
 import tracker.dao.{PositionDAO, TrackDAO}
@@ -26,7 +27,7 @@ class TrackService(
   def getByVehicle(vehicleId: Long, page: Option[Int], pageSize: Option[Int]): Task[Page[Track]] =
     vehicleTracksPagination(vehicleId).getPage(page.fold(1)(identity), pageSize.fold(Int.MaxValue)(identity))
 
-  def getPositions(trackId: Long): Task[List[Position]] = {
+  def getPositions(trackId: Long): Task[Option[NonEmptyList[Position]]] = {
     for {
       _ <- logger.debug(s"Getting positions of track $trackId")
       positions <- positionDAO.findByTrack(trackId)

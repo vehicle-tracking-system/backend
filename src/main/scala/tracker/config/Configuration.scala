@@ -21,14 +21,12 @@ final case class Configuration(
     boundedConnectExecutor: ThreadPoolExecutorConfig,
     client: Http4sBlazeClientConfig,
     circuitBreaker: CircuitBreakerConfig,
-    frontend: String,
     jmx: MicrometerJmxConfig,
     jwt: JwtConfig,
-    mqtt: MqttConfig
+    mqtt: MqttConfig,
+    volumes: VolumesConfig
 )
 
 object Configuration {
-
   implicit val reader: ConfigReader[Configuration] = deriveReader
-
 }

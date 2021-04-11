@@ -1,5 +1,6 @@
 package tracker.service
 
+import cats.data.NonEmptyList
 import io.circe.syntax.EncoderOps
 import org.scalatest.flatspec.AnyFlatSpec
 import slog4s.slf4j.Slf4jFactory
@@ -9,13 +10,15 @@ import zio.{Task, _}
 import zio.interop.catz._
 import org.scalatest._
 import matchers.should.Matchers._
-import tracker.utils.CaffeineAtomicCache
+import tracker.config.VolumesConfig
+import tracker.utils.{CaffeineAtomicCache, GPXFileGeneratorBuilder}
 
 import java.time.{ZoneId, ZonedDateTime}
 
 class PositionServiceTest extends AnyFlatSpec {
   private val loggerFactory = Slf4jFactory[Task].withoutContext.loggerFactory
   private val runtime: Runtime[zio.ZEnv] = Runtime.default
+  private val gpxBuilder = GPXFileGeneratorBuilder.apply(VolumesConfig("", ""))
 
   class PositionDAOTest(var positions: List[Position]) extends PositionDAO {
 
@@ -69,7 +72,7 @@ class PositionServiceTest extends AnyFlatSpec {
 
     override def persistList(positions: List[Position]): Task[Int] = throw new NotImplementedError()
 
-    override def findByTrack(trackId: Long): Task[List[Position]] = throw new NotImplementedError()
+    override def findByTrack(trackId: Long): Task[Option[NonEmptyList[Position]]] = throw new NotImplementedError()
 
     override def findActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]] = throw new NotImplementedError()
   }
@@ -77,7 +80,7 @@ class PositionServiceTest extends AnyFlatSpec {
   val positionDAO: PositionDAOTest = new PositionDAOTest(List.empty)
   val mockedCache: CaffeineAtomicCache[Long, Position] = runtime.unsafeRun(CaffeineAtomicCache.make[Long, Position](loggerFactory))
   val mockedPositionService: PositionService =
-    PositionService(positionDAO, loggerFactory, mockedCache)
+    PositionService(positionDAO, loggerFactory, mockedCache, gpxBuilder)
 
   "Position" should "be serializable to JSON without ID" in {
     positionDAO.clear()

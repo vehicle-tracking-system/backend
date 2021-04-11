@@ -1,5 +1,6 @@
 package tracker.dao
 
+import cats.data.NonEmptyList
 import zio.interop.catz._
 import doobie.implicits._
 import doobie.util.transactor.Transactor
@@ -26,7 +27,7 @@ trait PositionDAO {
 
   def findLastVehiclePosition(vehicleId: Long): Task[Option[Position]]
 
-  def findByTrack(trackId: Long): Task[List[Position]]
+  def findByTrack(trackId: Long): Task[Option[NonEmptyList[Position]]]
 
   def findActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]]
 }
@@ -85,8 +86,8 @@ class DefaultPositionDAO(transactor: Transactor[Task]) extends PositionDAO {
     }
   }
 
-  override def findByTrack(trackId: Long): Task[List[Position]] = {
-    findBy(fr"""WHERE TRACK_ID = $trackId""", 0, Int.MaxValue)
+  override def findByTrack(trackId: Long): Task[Option[NonEmptyList[Position]]] = {
+    findBy(fr"""WHERE TRACK_ID = $trackId""", 0, Int.MaxValue).map(NonEmptyList.fromList)
   }
 
   override def findActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]] = {

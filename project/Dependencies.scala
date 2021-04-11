@@ -1,6 +1,7 @@
 import sbt._
 
 object Dependencies {
+  val jpx = "io.jenetics" % "jpx" % Versions.jpx
   val scalaCacheCats = "com.github.cb372" %% "scalacache-cats-effect" % Versions.scalaCache
   val scalaCache = "com.github.cb372" %% "scalacache-caffeine" % Versions.scalaCache
   val scalapb = "com.thesamet.scalapb" %% "compilerplugin" % Versions.scalapb
@@ -58,6 +59,7 @@ object Dependencies {
     val mqtt = "0.4.2"
     val scalapb = "0.11.0"
     val scalaCache = "0.28.0"
+    val jpx = "2.2.0"
   }
 
 }
