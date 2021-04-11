@@ -9,17 +9,17 @@ import tracker._
 import java.time.{ZoneId, ZonedDateTime}
 
 class ResponseTest extends AnyFlatSpec {
-  "Response" should "NotFound should be serialized to JSON" in {
+  "NotFoundResponse" should "be serialized to JSON" in {
     val response = NotFoundResponse("page not found")
     val expectedJSON = Json.obj(("text", Json.fromString("page not found")))
     response.asJson shouldEqual expectedJSON
   }
-  it should "AccessTokenResponse should be serialized to JSON" in {
+  "AccessTokenResponse" should "be serialized to JSON" in {
     val response = AccessTokenResponse("this is access token")
     val expectedJSON = Json.obj(("token", Json.fromString("this is access token")))
     response.asJson shouldEqual expectedJSON
   }
-  it should "LoginResponse should be serialized to JSON" in {
+  "LoginResponse" should "be serialized to JSON" in {
     val user = User(
       Some(345),
       "Karel",
@@ -33,7 +33,7 @@ class ResponseTest extends AnyFlatSpec {
     val expectedJSON = Json.obj(("token", Json.fromString("this is access token")), ("user", user.asJson))
     response.asJson shouldEqual expectedJSON
   }
-  it should "TrackerResponse should be serialized to JSON" in {
+  "TrackerResponse" should "be serialized to JSON" in {
     val tracker = LightTracker(Some(233), "tracker", 232, "token", ZonedDateTime.of(2021, 2, 25, 0, 0, 0, 0, ZoneId.of("Europe/Prague")), None)
     val vehicle = LightVehicle(Some(667), "vehicle")
     val response = TrackerResponse(Tracker(tracker, vehicle), vehicle)
