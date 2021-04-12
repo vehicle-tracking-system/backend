@@ -6,6 +6,10 @@ import zio.Task
 
 import scala.math.max
 
+trait PaginationBuilder {
+  def make[A](find: (Int, Int) => Task[List[A]], count: () => Task[Int]): Pagination[A]
+}
+
 trait Pagination[A] {
   def getPage(number: Int, size: Int): Task[Page[A]]
 }
@@ -26,6 +30,11 @@ class DefaultPagination[A](find: (Int, Int) => Task[List[A]], count: () => Task[
       list <- find((number - 1) * size, size)
       count <- count()
     } yield new Page[A](number, max(count / size, 1), size, list)
+}
+
+object DefaultPaginationBuilder extends PaginationBuilder {
+  override def make[A](find: (Int, Int) => Task[List[A]], count: () => Task[Int]): DefaultPagination[A] =
+    new DefaultPagination[A](find, count)
 }
 
 object DefaultPagination {

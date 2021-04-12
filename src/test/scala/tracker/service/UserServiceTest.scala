@@ -35,6 +35,15 @@ class UserServiceTest extends AsyncFunSuite {
 
     override def findAllActive(offset: Int, limit: Int): Task[List[User]] =
       throw new NotImplementedError("User updating is not implemented for testing purposes.")
+
+    override def findActiveByUsername(username: String): Task[Option[User]] =
+      throw new NotImplementedError("User findActiveByUsername is not implemented for testing purposes.")
+
+    override def countActive(): Task[Int] =
+      throw new NotImplementedError("User counting is not implemented for testing purposes.")
+
+    override def markAsDeleted(id: Long): Task[User] =
+      throw new NotImplementedError("User updating is not implemented for testing purposes.")
   }
 
   object UserDAOTest {
@@ -55,7 +64,7 @@ class UserServiceTest extends AsyncFunSuite {
     )
 
     assert(
-      user.asJson.noSpaces == """{"id":1,"name":"Karel","createdAt":"2021-02-25T00:00:00+01:00[Europe/Prague]","deletedAt":null,"password":"10000:WS4enQfVmeoAtnCXUtRqCdHu+A1Tv7i1QReXH/bj5pU=:aumeogsLFIqGr9HrfvxdMw==","username":"karel","roles":["READER"]}"""
+      user.asJson.noSpaces == """{"id":1,"name":"Karel","createdAt":"2021-02-25T00:00:00+01:00[Europe/Prague]","deletedAt":null,"username":"karel","roles":["READER"]}"""
     )
   }
 
@@ -71,7 +80,7 @@ class UserServiceTest extends AsyncFunSuite {
     )
 
     assert(
-      user.asJson.noSpaces == """{"id":1,"name":"Karel","createdAt":"2021-02-25T00:00:00+01:00[Europe/Prague]","deletedAt":"2222-02-25T05:00:25+01:00[Europe/Prague]","password":"10000:WS4enQfVmeoAtnCXUtRqCdHu+A1Tv7i1QReXH/bj5pU=:aumeogsLFIqGr9HrfvxdMw==","username":"karel","roles":["EDITOR"]}"""
+      user.asJson.noSpaces == """{"id":1,"name":"Karel","createdAt":"2021-02-25T00:00:00+01:00[Europe/Prague]","deletedAt":"2222-02-25T05:00:25+01:00[Europe/Prague]","username":"karel","roles":["EDITOR"]}"""
     )
   }
 
