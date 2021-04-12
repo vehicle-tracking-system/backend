@@ -18,7 +18,10 @@ final case class User(
 )
 
 object User {
-  implicit val userEncoder: Encoder[User] = deriveEncoder
+  implicit val userEncoder: Encoder[User] =
+    Encoder.forProduct6("id", "name", "created_at", "deleted_at", "username", "roles") { u =>
+      (u.id, u.name, u.createdAt, u.deletedAt, u.username, u.roles)
+    }
   implicit val userDecoder: Decoder[User] = deriveDecoder
 
   implicit val userReade: Read[User] =

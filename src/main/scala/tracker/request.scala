@@ -33,6 +33,12 @@ object NewUserRequest {
       }
 }
 
+final case class NewPasswordRequest(password: String)
+
+object NewPasswordRequest {
+  implicit val decoder: Decoder[NewPasswordRequest] = deriveDecoder
+}
+
 final case class UpdateUserRequest(override val user: User) extends UserRequest
 
 object UpdateUserRequest {
