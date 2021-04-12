@@ -19,6 +19,8 @@ trait UserDAO {
 
   def findAll(offset: Int, limit: Int): Task[List[User]]
 
+  def findAllActive(offset: Int, limit: Int): Task[List[User]]
+
   def findByUsername(username: String): Task[Option[User]]
 
   def count(): Task[Int]
@@ -37,6 +39,11 @@ class DefaultUserDAO(transactor: Transactor[Task], logger: Logger[Task]) extends
   override def findAll(offset: Int, limit: Int): Task[List[User]] = {
     logger.info("Selecting all users") >>
       findBy(Fragment.empty, offset, limit)
+  }
+
+  override def findAllActive(offset: Int, limit: Int): Task[List[User]] = {
+    logger.info("Selecting all users") >>
+      findBy(fr"""WHERE DELETED_AT IS NULL""", offset, limit)
   }
 
   def findByUsername(username: String): Task[Option[User]] = {

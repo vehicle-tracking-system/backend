@@ -10,8 +10,9 @@ import tracker.utils.PasswordUtility
 import zio.interop.catz._
 import zio.Task
 
-class UserService(userDAO: UserDAO, jwtConfig: JwtConfig, logger: Logger[Task]) {
-  val pagination: Pagination[User] = DefaultPagination(userDAO.findAll, () => userDAO.count())
+import java.time.ZonedDateTime
+
+class UserService(userDAO: UserDAO, jwtConfig: JwtConfig, logger: Logger[Task], pagination: Pagination[User]) {
 
   def getUserById(id: Long): Task[Option[User]] = {
     userDAO.find(id)
@@ -28,28 +29,49 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig, logger: Logger[Task]) 
     }
   }
 
+  def delete(userRequest: UserRequest): Task[User] =
+    logger.info(s"Mark user ${userRequest.user.id} as deleted") >>
+      userDAO
+        .update(
+          User(
+            userRequest.user.id,
+            userRequest.user.name,
+            userRequest.user.createdAt,
+            Some(ZonedDateTime.now()),
+            "N/A",
+            userRequest.user.username,
+            userRequest.user.roles
+          )
+        )
+
   def login(loginRequest: LoginRequest): Task[Option[LoginResponse]] = {
     userDAO
       .findByUsername(loginRequest.username)
       .map {
         _.flatMap { user =>
           if (PasswordUtility.checkPassword(loginRequest.password, user.password)) {
-            Some {
-              LoginResponse(
-                AccessTokenBuilder.createToken(
-                  AccessTokenPayload(user.id.get, user.roles),
-                  jwtConfig
-                ),
-                user
-              )
-            }
+            Some(generateToken(user))
           } else None
         }
       }
+  }
+
+  def generateToken(user: User): LoginResponse = {
+    LoginResponse(
+      AccessTokenBuilder.createToken(
+        AccessTokenPayload(user.id.get, user.roles),
+        jwtConfig
+      ),
+      user
+    )
+  }
+
+  def changePassword(user: User, password: String): Task[User] = {
+    userDAO.update(User(user.id, user.name, user.createdAt, user.deletedAt, PasswordUtility.hashPassword(password), user.username, user.roles))
   }
 }
 
 object UserService {
   def apply(userDAO: UserDAO, jwtConfig: JwtConfig, loggerFactory: LoggerFactory[Task]) =
-    new UserService(userDAO, jwtConfig, loggerFactory.make("user-service"))
+    new UserService(userDAO, jwtConfig, loggerFactory.make("user-service"), DefaultPagination(userDAO.findAllActive, () => userDAO.count()))
 }
