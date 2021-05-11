@@ -12,7 +12,7 @@ import zio.interop.catz._
 class GPX(positionService: PositionService) extends AuthedRoutesPart {
   override def routes: AuthedRoutes[User, Task] =
     AuthedRoutes.of {
-      case request @ GET -> Root / "gpx" :? IdQueryParamMatcher(track) as _ =>
+      case request @ GET -> Root :? IdQueryParamMatcher(track) as _ =>
         request.withRoles(Reader) {
           positionService
             .generateGPX(track)
