@@ -9,11 +9,24 @@ import zio.Task
 import zio.interop.catz._
 
 trait Comparable[A] {
+
+  /**
+    * @param first - first compared element
+    * @param second - secon compared element
+    * @return newer element
+    */
   def chooseNewer(first: A, second: A): A
 }
+
+/**
+  * Type class providing compare functions.
+  */
 object Comparable {
   implicit val positionComparable: Comparable[Position] = (first: Position, second: Position) => {
     if (first.timestamp.isBefore(second.timestamp)) second else first
+  }
+  implicit val intComparable: Comparable[Int] = (first: Int, second: Int) => {
+    if (first > second) first else second
   }
 }
 

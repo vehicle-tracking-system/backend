@@ -7,6 +7,9 @@ import javax.crypto._
 import javax.crypto.spec.PBEKeySpec
 import org.log4s.{getLogger, Logger}
 
+/**
+  * Providing operations with passwords.
+  */
 class PasswordUtility {
   val DefaultIterations = 10000
   val random = new SecureRandom()
@@ -18,6 +21,11 @@ class PasswordUtility {
     keyFactory.generateSecret(keySpec).getEncoded
   }
 
+  /**
+    * Hash password with random salt and defined iterations.
+    * @param password - password to be hashed
+    * @return hashed password
+    */
   def hashPassword(password: String): String = {
     val salt = new Array[Byte](16)
     random.nextBytes(salt)
@@ -29,6 +37,12 @@ class PasswordUtility {
     res
   }
 
+  /**
+    * Check if plain password matching their hash in colon format (iterations:hash:salt)
+    * @param password - plain password in colon format
+    * @param passwordHash - password hash in colon format (iterations:hash:salt)
+    * @return True if hash of plain password matches `passwordHash`, otherwise false
+    */
   def checkPassword(password: String, passwordHash: String): Boolean = {
     passwordHash.split(":") match {
       case Array(it, hash64, salt64) if it.forall(_.isDigit) =>
@@ -39,7 +53,7 @@ class PasswordUtility {
 
         calculatedHash.sameElements(hash)
 
-      case _ => sys.error("Bad password hash")
+      case _ => false
     }
   }
 }

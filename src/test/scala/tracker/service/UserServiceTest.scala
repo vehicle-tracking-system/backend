@@ -44,6 +44,9 @@ class UserServiceTest extends AsyncFunSuite {
 
     override def markAsDeleted(id: Long): Task[User] =
       throw new NotImplementedError("User updating is not implemented for testing purposes.")
+
+    override def updatePassword(id: Long, password: String): Task[User] =
+      throw new NotImplementedError("User updating is not implemented for testing purposes.")
   }
 
   object UserDAOTest {

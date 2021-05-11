@@ -47,10 +47,17 @@ object MessageType {
   }
 }
 
+case class SubscribeMessage(id: Long)
+
+object SubscribeMessage {
+  implicit val decoder: Decoder[SubscribeMessage] = deriveDecoder
+  implicit val encoder: Encoder[SubscribeMessage] = deriveEncoder
+}
+
 sealed trait WebSocketMessage {
   def msgType: MessageType
   def token: Option[String]
-  def payload: String
+  def payload: Json
 }
 
 object WebSocketMessage {
@@ -60,22 +67,23 @@ object WebSocketMessage {
   implicit val encoder: Encoder[WebSocketMessage] =
     DefaultWebSocketMessage.encoder.contramap(_.asInstanceOf[DefaultWebSocketMessage])
 
-  val empty: WebSocketMessage = new DefaultWebSocketMessage(Empty, None, "{}")
-  val heartbeat: WebSocketMessage = new DefaultWebSocketMessage(Heartbeat, None, "{}")
+  val empty: WebSocketMessage = new DefaultWebSocketMessage(Empty, None, "{}".asJson)
+  val heartbeat: WebSocketMessage = new DefaultWebSocketMessage(Heartbeat, None, "{}".asJson)
   val internalError: WebSocketMessage = error("Internal server error")
-  def text(text: String): WebSocketMessage = new DefaultWebSocketMessage(Text, None, text)
-  def error(text: String): WebSocketMessage = new DefaultWebSocketMessage(Error, None, text)
-  def position(position: Position, isMoving: Boolean = false): WebSocketMessage =
+  def text(text: Json): WebSocketMessage = new DefaultWebSocketMessage(Text, None, text)
+  def error(text: String): WebSocketMessage = new DefaultWebSocketMessage(Error, None, Json.obj(("msg", Json.fromString(text))))
+  def position(position: Position): WebSocketMessage =
     new DefaultWebSocketMessage(
       Position,
       None,
-      position.asJson.deepMerge(Json.fromFields(List(("isMoving", Json.fromBoolean(isMoving))))).noSpacesSortKeys
+      //position.asJson.deepMerge(Json.fromFields(List(("isMoving", Json.fromBoolean(isMoving))))).noSpacesSortKeys
+      position.asJson
     )
   def vehicle(vehicles: List[Vehicle], token: Option[String] = None): WebSocketMessage =
-    new DefaultWebSocketMessage(Vehicle, token, vehicles.asJson.noSpacesSortKeys)
+    new DefaultWebSocketMessage(Vehicle, token, vehicles.asJson)
 }
 
-private case class DefaultWebSocketMessage(msgType: MessageType, token: Option[String], payload: String) extends WebSocketMessage
+private case class DefaultWebSocketMessage(msgType: MessageType, token: Option[String], payload: Json) extends WebSocketMessage
 
 private object DefaultWebSocketMessage {
   implicit val decoder: Decoder[DefaultWebSocketMessage] = deriveDecoder

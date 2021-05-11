@@ -12,6 +12,13 @@ import java.nio.file.{FileSystems, Path}
 import scala.jdk.CollectionConverters._
 
 class GPXFileGeneratorBuilder(config: VolumesConfig, blocker: Blocker) {
+
+  /**
+    * Create GPX file generator
+    * @param name name of GPX file
+    * @param positions positions to be write into GPX file
+    * @return GPXFileGenerator with setup parameters
+    */
   def make(name: String, positions: NonEmptyList[Position]): GPXFileGenerator = new GPXFileGenerator(name, config, positions, blocker)
 }
 
@@ -30,17 +37,26 @@ class GPXFileGenerator(name: String, config: VolumesConfig, positions: NonEmptyL
     gpx.addTrack(track)
   }
 
+  /**
+    * GPX file loaded in memory. File is render only once (lazy).
+    */
   lazy val generate: GPXFile = new GPXFile(builder.build(), path, blocker)
 }
 
 class GPXFile(gpx: GPX, path: Path, blocker: Blocker) {
 
+  /**
+    * @return fs2.Stream contains GPX file
+    */
   def stream(): fs2.Stream[Task, Byte] = {
     fs2.io.readOutputStream(blocker, 4096) { out =>
       Task.effect(GPX.write(gpx, out))
     }
   }
 
+  /**
+    * Persist GPX file into file on filesystem.
+    */
   def save(): Unit = {
     if (path.getParent.toFile.exists()) {
       GPX.write(gpx, path)

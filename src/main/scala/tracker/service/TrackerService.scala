@@ -1,22 +1,22 @@
 package tracker.service
 
 import cats.implicits.catsSyntaxFlatMapOps
+import io.circe.Json
 import slog4s.{Logger, LoggerFactory}
 import tracker._
-import tracker.config.JwtConfig
+import tracker.config.Configuration
 import tracker.dao.{TrackerDAO, UserDAO}
 import tracker.security.{AccessTokenBuilder, AccessTokenPayload}
+import tracker.utils.{Clock, DefaultClock}
 import zio.interop.catz._
 import zio.Task
 
-import java.time.ZonedDateTime
-
-class TrackerService(trackerDAO: TrackerDAO, jwtConfig: JwtConfig, logger: Logger[Task]) {
+class TrackerService(trackerDAO: TrackerDAO, config: Configuration, logger: Logger[Task], clock: Clock) {
   val pagination: Pagination[Tracker] = DefaultPagination(trackerDAO.findAllActive, () => trackerDAO.count())
 
   def persist(request: NewTrackerRequest): Task[Tracker] = {
     for {
-      tmpTracker <- trackerDAO.persist(request.tracker)
+      tmpTracker <- trackerDAO.persist(LightTracker(None, request.name, request.vehicleId, "N/A", clock.now(), None))
       trackerWithToken <- updateAccessToken(tmpTracker.tracker)
     } yield trackerWithToken
   }
@@ -25,19 +25,9 @@ class TrackerService(trackerDAO: TrackerDAO, jwtConfig: JwtConfig, logger: Logge
     trackerDAO.update(request.tracker)
   }
 
-  def delete(request: UpdateTrackerRequest): Task[Tracker] = {
-    logger.info(s"Mark tracker ${request.tracker.id} as deleted") >>
-      trackerDAO
-        .update(
-          LightTracker(
-            request.tracker.id,
-            request.tracker.name,
-            request.tracker.vehicleId,
-            request.tracker.token,
-            request.tracker.createdAt,
-            Some(ZonedDateTime.now())
-          )
-        );
+  def delete(trackerId: Long): Task[Tracker] = {
+    logger.info(s"Mark tracker $trackerId as deleted") >>
+      trackerDAO.markAsDeleted(trackerId)
   }
 
   def get(trackerId: Long): Task[Option[Tracker]] =
@@ -64,9 +54,37 @@ class TrackerService(trackerDAO: TrackerDAO, jwtConfig: JwtConfig, logger: Logge
     for {
       _ <- logger.info(s"Generate new token for tracker ${tracker.id}")
       token <- Task(generateAccessToken(tracker.id.getOrElse(throw new IllegalArgumentException("Tracker must have unique identifier"))))
-      updatedTracker <- trackerDAO.update(LightTracker(tracker.id, tracker.name, tracker.vehicleId, token, tracker.createdAt, tracker.deletedAt))
+      updatedTracker <- trackerDAO.updateAccessToken(tracker.ID, token)
     } yield updatedTracker
 
+  }
+
+  def configFile(trackerId: Long): Task[Option[fs2.Stream[Task, Byte]]] = {
+    trackerDAO.find(trackerId).map { tracker =>
+      tracker.fold(Option.empty[fs2.Stream[Task, Byte]]) { t =>
+        Some {
+          fs2.Stream
+            .eval(Task.effect {
+              Json
+                .obj(
+                  ("token", Json.fromString(t.tracker.token)),
+                  ("id", Json.fromLong(t.tracker.ID)),
+                  ("vehicleId", Json.fromLong(t.vehicle.ID)),
+                  ("mqttHost", Json.fromString(config.mqtt.host)),
+                  ("mqttPort", Json.fromInt(config.mqtt.port)),
+                  ("mqttUsername", Json.fromString(config.mqtt.user.getOrElse(""))),
+                  ("mqttPassword", Json.fromString(config.mqtt.password.getOrElse(""))),
+                  ("mqttTopic", Json.fromString(config.mqtt.topic))
+                )
+                .noSpacesSortKeys
+                .toCharArray
+                .toSeq
+            })
+            .flatMap(fs2.Stream.emits)
+            .through(t => t.map(j => j.toByte))
+        }
+      }
+    }
   }
 
   def verifyAccessToken(token: String): Task[Boolean] = {
@@ -79,14 +97,20 @@ class TrackerService(trackerDAO: TrackerDAO, jwtConfig: JwtConfig, logger: Logge
   private def generateAccessToken(trackerId: Long): String = {
     AccessTokenBuilder.createUnlimitedToken(
       AccessTokenPayload(trackerId, Set(Roles.Tracker)),
-      jwtConfig
+      config.jwt
     )
   }
 }
 
 object TrackerService {
-  def apply(trackerDAO: TrackerDAO, userDAO: UserDAO, jwtConfig: JwtConfig, loggerFactory: LoggerFactory[Task]): TrackerService = {
+  def apply(
+      trackerDAO: TrackerDAO,
+      userDAO: UserDAO,
+      config: Configuration,
+      loggerFactory: LoggerFactory[Task],
+      clock: Clock = DefaultClock
+  ): TrackerService = {
     userDAO.count()
-    new TrackerService(trackerDAO, jwtConfig, loggerFactory.make("tracker-service"))
+    new TrackerService(trackerDAO, config, loggerFactory.make("tracker-service"), clock)
   }
 }

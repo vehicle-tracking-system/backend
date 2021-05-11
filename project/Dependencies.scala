@@ -17,7 +17,7 @@ object Dependencies {
   val circeGenericExtras = "io.circe" %% "circe-generic-extras" % Versions.circe
   val jwt = "com.pauldijou" %% "jwt-core" % Versions.jwt
   val jwtCirce = "com.pauldijou" %% "jwt-circe" % Versions.jwt
-  val deadbolt = "be.objectify" %% "deadbolt-scala" % Versions.deadbolt
+//  val deadbolt = "be.objectify" %% "deadbolt-scala" % Versions.deadbolt
   val h2Database = "com.h2database" % "h2" % Versions.h2
   val doobie = "org.tpolecat" %% "doobie-postgres" % Versions.doobie
   val doobieh2 = "org.tpolecat" %% "doobie-h2" % Versions.doobie
@@ -39,6 +39,7 @@ object Dependencies {
   val sstMonixCatnapPureConfig = "com.avast" %% "sst-monix-catnap-pureconfig" % Versions.sst
   val testContainers = "com.dimafeng" %% "testcontainers-scala-scalatest" % Versions.testContainers
   val testContainersPostgres = "com.dimafeng" %% "testcontainers-scala-postgresql" % Versions.testContainers
+  val zioTestSbt = "dev.zio" %% "zio-test-sbt" % "1.0.5"
   val zioTest = "dev.zio" %% "zio-test" % "1.0.5"
   val zio = "dev.zio" %% "zio" % "1.0.5"
   val zioInteropCats = "dev.zio" %% "zio-interop-cats" % "2.4.0.0"
@@ -49,7 +50,7 @@ object Dependencies {
     val doobie = "0.9.2"
     val testContainers = "0.38.6"
     val h2 = "1.4.200"
-    val deadbolt = "2.8.2"
+//    val deadbolt = "2.8.2"
     val jwt = "5.0.0"
     val circe = "0.13.0"
     val pac4j_http4s = "2.0.1"

@@ -9,7 +9,7 @@ import tracker.service._
 import zio.Task
 import zio.interop.catz._
 
-class GPX(positionService: PositionService) extends AuthedRoutesPart {
+class GPXRoutes(positionService: PositionService) extends AuthedRoutesPart {
   override def routes: AuthedRoutes[User, Task] =
     AuthedRoutes.of {
       case request @ GET -> Root :? IdQueryParamMatcher(track) as _ =>

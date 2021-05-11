@@ -4,16 +4,15 @@ package protocol;
 
 message Report {
   required string token = 1;
-  required bytes sessionId = 2;
-  required int64 vehicleId = 3;
-  optional int64 timestamp = 4;
-  required bool isMoving = 5;
-  repeated TrackerPosition positions = 6;
+  required bytes sessionId = 4;
+  required int64 vehicleId = 7;
+  optional int64 timestamp = 10;
+  repeated TrackerPosition positions = 13;
 }
 
 message TrackerPosition {
   required int64 timestamp = 1;
-  required double latitude = 2;
-  required double longitude = 3;
-  required double speed = 4;
+  required double latitude = 4;
+  required double longitude = 7;
+  required double speed = 10;
 }

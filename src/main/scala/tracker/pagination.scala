@@ -1,16 +1,30 @@
 package tracker
 
-import io.circe.Encoder
-import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import zio.Task
 
 import scala.math.max
 
 trait PaginationBuilder {
+
+  /**
+    * Create class allows paginating data from database.
+    * @param find - function takes two parameter, offset and limit, and returns List of `A` in effect Task
+    * @param count - function returns total amount of `A` in database
+    * @tparam A - paginating object
+    * @return Pagination[A] - allows get page with data
+    */
   def make[A](find: (Int, Int) => Task[List[A]], count: () => Task[Int]): Pagination[A]
 }
 
 trait Pagination[A] {
+
+  /**
+    * @param number - page number
+    * @param size - size of page
+    * @return requested page
+    */
   def getPage(number: Int, size: Int): Task[Page[A]]
 }
 
@@ -22,6 +36,8 @@ object Page {
   implicit val trackerEncoder: Encoder[Page[Tracker]] = deriveEncoder
   implicit val userEncoder: Encoder[Page[User]] = deriveEncoder
   implicit val fleetEncoder: Encoder[Page[Fleet]] = deriveEncoder
+
+  implicit val userDecoder: Decoder[Page[User]] = deriveDecoder
 }
 
 class DefaultPagination[A](find: (Int, Int) => Task[List[A]], count: () => Task[Int]) extends Pagination[A] {

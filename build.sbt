@@ -2,12 +2,14 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / turbo := true
 ThisBuild / organization := "cz.cvut.fit"
 
+testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+
 name := "tracker-server"
 version := "1.0"
 enablePlugins(JavaAppPackaging)
 
 enablePlugins(DockerPlugin)
-packageName in Docker := "jehlima2/" + packageName.value
+packageName in Docker := "cz.cvut.fit/" + packageName.value
 dockerExposedVolumes := Seq("/opt/docker/logs")
 dockerExposedPorts ++= Seq(8080)
 
@@ -40,9 +42,10 @@ assemblyMergeStrategy in assembly := {
         MergeStrategy.filterDistinctLines
       case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
         MergeStrategy.filterDistinctLines
-      case _ => MergeStrategy.deduplicate
+      case _ => MergeStrategy.rename
     }
-  case _ => MergeStrategy.deduplicate
+  case "LICENSE" => MergeStrategy.rename
+  case _         => MergeStrategy.deduplicate
 }
 
 lazy val commonSettings = BuildSettings.common ++ Seq(
@@ -63,12 +66,13 @@ lazy val commonSettings = BuildSettings.common ++ Seq(
     Dependencies.circeGenericExtras,
     Dependencies.circeCore,
     Dependencies.circeParser,
-    Dependencies.deadbolt,
+//    Dependencies.deadbolt,
     Dependencies.h2Database,
     Dependencies.jwt,
     Dependencies.jwtCirce,
     Dependencies.logbackClassic,
     Dependencies.scalaTest % Test,
+    Dependencies.zioTestSbt % Test,
     Dependencies.zioTest % Test,
     Dependencies.testContainers % Test,
     Dependencies.testContainersPostgres % Test

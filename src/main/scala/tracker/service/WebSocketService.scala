@@ -41,10 +41,12 @@ class WebSocketService(
       .subscribe(100)
       .evalMap {
         case DefaultWebSocketMessage(MessageType.Position, _, pos) =>
-          decode[Position](pos) match {
+          //          decode[Position](pos) match {
+          pos.as[Position] match {
             case Right(position) => newPositionResponse(position).map(_.getOrElse(Text("")))
             case _               => logger.warn("Position in topic cannot be decoded") >> Task(Text(internalError.asJson.noSpacesSortKeys))
           }
+
         case msg => Task(Text(msg.asJson.noSpaces))
       }
       .merge(sessionTopicStream)
@@ -61,17 +63,18 @@ class WebSocketService(
                 val vehicles = for {
                   stringToken <- IO.fromEither(jwt.toRight("Access token must be provided"))
                   token <- IO.fromEither(tokenParser.parseAccessToken(stringToken, config.jwt.secret)).mapError(e => s"Invalid token $e")
-                  id <- IO.fromEither(payload.toLongOption.toRight("Could not convert vehicle ID to number"))
-                  vehicleOpt <- vehicleService.get(id).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
+                  payload <- IO.fromEither(payload.as[SubscribeMessage])
+//                  id <- IO.fromEither(payload.id.toRight("Could not convert vehicle ID to number"))
+                  vehicleOpt <- vehicleService.get(payload.id).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
                   _ <- IO.fromEither(vehicleOpt.toRight("Vehicle not found"))
                   _ <- logger.debug(s"New subscription for vehicle: $payload from user ${token.clientId} with roles ${token.clientRoles}")
-                  vehicles <- subscribedVehicles.modify(sv => (sv + id, sv + id))
+                  vehicles <- subscribedVehicles.modify(sv => (sv + payload.id, sv + payload.id))
                 } yield vehicles
 
                 vehicles.either.flatMap {
                   _.fold(
                     e => sessionTopic.publish1(error(e.toString)),
-                    v => vehicleService.getList(v).flatMap(a => sessionTopic.publish1(text(a.asJson.noSpacesSortKeys)))
+                    v => vehicleService.getList(v).flatMap(a => sessionTopic.publish1(text(a.asJson)))
                   )
                 }
 
@@ -79,15 +82,16 @@ class WebSocketService(
                 val vehicles = for {
                   stringToken <- IO.fromEither(jwt.toRight("Access token must be provided"))
                   token <- IO.fromEither(tokenParser.parseAccessToken(stringToken, config.jwt.secret)).mapError(e => s"Invalid token $e")
-                  id <- IO.fromEither(payload.toLongOption.toRight("Could not convert vehicle ID to number"))
+                  payload <- IO.fromEither(payload.as[SubscribeMessage])
+//                  id <- IO.fromEither(payload.toLongOption.toRight("Could not convert vehicle ID to number"))
                   _ <- logger.debug(s"Unsubscribing vehicle: $payload from user ${token.clientId} with roles ${token.clientRoles}")
-                  vehicles <- subscribedVehicles.modify(sv => (sv - id, sv - id))
+                  vehicles <- subscribedVehicles.modify(sv => (sv - payload.id, sv - payload.id))
                 } yield vehicles
 
                 vehicles.either.flatMap {
                   _.fold(
                     e => sessionTopic.publish1(error(e.toString)),
-                    v => vehicleService.getList(v).flatMap(a => sessionTopic.publish1(text(a.asJson.noSpacesSortKeys)))
+                    v => vehicleService.getList(v).flatMap(a => sessionTopic.publish1(text(a.asJson)))
                   )
                 }
               case _ => ZIO.unit

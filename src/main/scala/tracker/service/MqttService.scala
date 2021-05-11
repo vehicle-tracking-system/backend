@@ -5,13 +5,13 @@ import fs2.concurrent.Topic
 import net.sigusr.mqtt.api.Message
 import protocol.tracker._
 import slog4s.{Logger, LoggerFactory}
-import tracker.{Position, PositionsRequest, Role, Roles, WebSocketMessage}
+import tracker._
 import tracker.config.Configuration
 import tracker.security.{AccessToken, AccessTokenParser}
 import zio.{IO, Task}
 
-import java.util.Base64
 import java.time.{Instant, ZoneId, ZonedDateTime}
+import java.util.Base64
 import scala.concurrent.duration.{Duration, DurationLong}
 
 class MqttService(
@@ -57,14 +57,13 @@ class MqttService(
       positionRequest <- IO.fromEither(handleNewPosition(token, sessionId, trackId, report)).mapError(e => s"Handling new position error: $e")
       positionSaved <- positionRequest
       _ <-
-        if (reportLastPosition.timestamp.seconds > optLastPosition.fold(Duration.Zero)(p => p.timestamp.toEpochSecond.seconds)) { // new 'lastPosition' position is really newer
-          topic.publish1( // send new position to clients
+        topic
+          .publish1( // send new position to clients
             WebSocketMessage.position(
-              toPosition(report.vehicleId, sessionId, trackId, reportLastPosition),
-              isMoving = true
+              toPosition(report.vehicleId, sessionId, trackId, reportLastPosition)
             )
           )
-        } else Task.unit
+          .when(reportLastPosition.timestamp.seconds > optLastPosition.fold(Duration.Zero)(p => p.timestamp.toEpochSecond.seconds))
     } yield positionSaved
 
     processed.either.flatMap {

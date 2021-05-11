@@ -12,6 +12,9 @@ import doobie.Update
 
 import java.time.ZonedDateTime
 
+/**
+  * Provides access and operations with Position records in database.
+  */
 trait PositionDAO {
   def persist(position: Position): Task[Position]
 

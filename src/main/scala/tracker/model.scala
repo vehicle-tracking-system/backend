@@ -56,19 +56,30 @@ object User {
     }
 }
 
-sealed trait Role
+sealed trait Role {
+  def subRoles(): Set[Role]
+}
 
 object Roles {
-  case object Admin extends Role
+  case object Admin extends Role {
+    override def subRoles(): Set[Role] = Set(Admin, User, Reader, Editor)
+  }
 
-  case object User extends Role
+  case object User extends Role {
+    override def subRoles(): Set[Role] = Set(User)
+  }
 
-  case object Reader extends Role
+  case object Reader extends Role {
+    override def subRoles(): Set[Role] = Set(Reader, User)
+  }
 
-  case object Editor extends Role
+  case object Editor extends Role {
+    override def subRoles(): Set[Role] = Set(Editor, Reader, User)
+  }
 
-  case object Tracker extends Role
-
+  case object Tracker extends Role {
+    override def subRoles(): Set[Role] = Set(Tracker)
+  }
 }
 
 object Role {
@@ -100,7 +111,12 @@ object Role {
   }
 }
 
-final case class LightVehicle(id: Option[Long], name: String) {
+final case class LightVehicle(
+    id: Option[Long],
+    name: String,
+    createdAt: ZonedDateTime = ZonedDateTime.now(),
+    deletedAt: Option[ZonedDateTime] = None
+) {
   lazy val ID: Long = id.getOrElse(throw new IllegalStateException("LightVehicle without identifier"))
 }
 

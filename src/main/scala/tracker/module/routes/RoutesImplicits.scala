@@ -13,8 +13,8 @@ object RoutesImplicits extends Http4sDsl[Task] {
         roles: Role*
     )(f: Task[Response[Task]]): Task[Response[Task]] = {
       val user = request.context
-
-      if (roles.toSet.subsetOf(user.roles) || user.roles.contains(Admin)) {
+      val userRoles = user.roles.flatMap(_.subRoles())
+      if (roles.toSet.subsetOf(userRoles) || user.roles.contains(Admin)) {
         f
       } else {
         Forbidden()

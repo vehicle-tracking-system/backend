@@ -7,10 +7,12 @@ import tracker.config.JwtConfig
 import tracker.dao.UserDAO
 import tracker.security.{AccessTokenBuilder, AccessTokenPayload}
 import tracker.utils.PasswordUtility
+import tracker.utils.Clock
+import tracker.utils.DefaultClock
 import zio.interop.catz._
 import zio.Task
 
-class UserService(userDAO: UserDAO, jwtConfig: JwtConfig, logger: Logger[Task], paginationBuilder: PaginationBuilder) {
+class UserService(userDAO: UserDAO, jwtConfig: JwtConfig, clock: Clock, logger: Logger[Task], paginationBuilder: PaginationBuilder) {
   private val getAllPagination = paginationBuilder.make((o, s) => userDAO.findAll(o, s), () => userDAO.count())
   private val getAllActivePagination = paginationBuilder.make((o, s) => userDAO.findAllActive(o, s), () => userDAO.countActive())
 
@@ -29,9 +31,27 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig, logger: Logger[Task], 
   }
 
   def persist(userRequest: UserRequest): Task[User] = {
-    userRequest.user.id match {
-      case Some(_) => userDAO.update(userRequest.user)
-      case None    => userDAO.persist(userRequest.user)
+    userRequest match {
+      case newUserRequest: NewUserRequest =>
+        userDAO.persist(
+          User(None, newUserRequest.name, clock.now(), None, newUserRequest.password, newUserRequest.username, newUserRequest.roles.toSet)
+        )
+      case updateUserRequest: UpdateUserRequest =>
+        for {
+          user <- userDAO.find(updateUserRequest.id).someOrFail(throw new NoSuchElementException)
+          resp <- userDAO.update(
+            User(
+              Some(updateUserRequest.id),
+              updateUserRequest.name.getOrElse(user.name),
+              clock.now(),
+              user.deletedAt,
+              user.password,
+              updateUserRequest.username.getOrElse(user.username),
+              updateUserRequest.roles.getOrElse(user.roles).toSet
+            )
+          )
+
+        } yield resp
     }
   }
 
@@ -62,12 +82,12 @@ class UserService(userDAO: UserDAO, jwtConfig: JwtConfig, logger: Logger[Task], 
     )
   }
 
-  def changePassword(user: User, password: String): Task[User] = {
-    userDAO.update(User(user.id, user.name, user.createdAt, user.deletedAt, PasswordUtility.hashPassword(password), user.username, user.roles))
+  def changePassword(id: Long, password: String): Task[User] = {
+    userDAO.updatePassword(id, PasswordUtility.hashPassword(password))
   }
 }
 
 object UserService {
-  def apply(userDAO: UserDAO, jwtConfig: JwtConfig, loggerFactory: LoggerFactory[Task]) =
-    new UserService(userDAO, jwtConfig, loggerFactory.make("user-service"), DefaultPaginationBuilder)
+  def apply(userDAO: UserDAO, jwtConfig: JwtConfig, loggerFactory: LoggerFactory[Task], clock: Clock = DefaultClock) =
+    new UserService(userDAO, jwtConfig, clock, loggerFactory.make("user-service"), DefaultPaginationBuilder)
 }

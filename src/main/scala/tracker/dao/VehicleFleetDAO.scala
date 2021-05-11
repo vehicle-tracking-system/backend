@@ -37,9 +37,9 @@ class DefaultVehicleFleetDAO(transactor: Transactor[Task]) extends VehicleFleetD
   }
 
   def setToVehicle(vehicle: Vehicle): Task[Int] = {
-    val vehicleId = vehicle.vehicle.id.getOrElse(throw new IllegalStateException("Vehicle without identifier"))
+    val vehicleId = vehicle.vehicle.ID
     val vehicleFleet: List[VehicleFleetInfo] = vehicle.fleets.map { f =>
-      (vehicleId, f.id.getOrElse(throw new IllegalStateException("Fleet without identifier")))
+      (vehicleId, f.ID)
     }
     val transaction = for {
       _ <- sql"""DELETE FROM VEHICLEFLEET WHERE VEHICLE_ID = $vehicleId""".update.run

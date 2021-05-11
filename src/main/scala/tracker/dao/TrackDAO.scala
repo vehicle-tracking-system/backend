@@ -1,6 +1,8 @@
 package tracker.dao
 
+import doobie.free.connection
 import zio.interop.catz._
+import cats.free.Free
 import doobie.implicits._
 import doobie.util.transactor.Transactor
 import doobie.implicits.javatime._
@@ -69,29 +71,30 @@ class DefaultTrackDAO(transactor: Transactor[Task]) extends TrackDAO {
   }
 
   override def countVehicleTracks(vehicleId: Long): Task[Int] = {
-    sql"""SELECT COUNT(*) FROM TRACK WHERE VEHICLE_ID = $vehicleId"""
-      .query[Int]
-      .unique
-      .transact(transactor)
+    countWhere(fr"""WHERE VEHICLE_ID = $vehicleId""").transact(transactor)
   }
 
   override def count(): Task[Int] = {
-    sql"""SELECT COUNT(*) FROM TRACK"""
-      .query[Int]
-      .unique
-      .transact(transactor)
+    countWhere(Fragment.empty).transact(transactor)
   }
 
   private def mapToList(in: List[(LightTrack, LightVehicle)]): List[Track] = in.map(g => Track(g._1, g._2))
 
   private def findBy(fra: Fragment, offset: Int, limit: Int): Task[List[Track]] = {
-    (sql"""SELECT T.ID, T.VEHICLE_ID, T.TIMESTAMP, V.ID, V.NAME FROM TRACK T INNER JOIN VEHICLE V on T.VEHICLE_ID = V.ID """
+    (sql"""SELECT T.ID, T.VEHICLE_ID, T.TIMESTAMP, V.ID, V.NAME, V.CREATED_AT, V.DELETED_AT FROM TRACK T INNER JOIN VEHICLE V on T.VEHICLE_ID = V.ID """
       ++ fra
       ++ sql"""ORDER BY TIMESTAMP DESC LIMIT $limit OFFSET $offset""")
       .query[(LightTrack, LightVehicle)]
       .to[List]
       .transact(transactor)
       .map(mapToList)
+  }
+
+  private def countWhere(fra: Fragment): Free[connection.ConnectionOp, Int] = {
+    (sql"""SELECT COUNT(*) FROM TRACK"""
+      ++ fra)
+      .query[Int]
+      .unique
   }
 }
 

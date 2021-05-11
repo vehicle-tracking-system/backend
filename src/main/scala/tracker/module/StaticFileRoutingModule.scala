@@ -11,6 +11,9 @@ import zio.interop.catz._
 import java.io.File
 import java.util.concurrent.Executors
 
+/**
+  * Serving static file (UI) to client. The path to this files are specified in config `volumes.frontend`.
+  */
 object StaticFileRoutingModule extends Http4sDsl[Task] {
   private val blockingPool = Executors.newFixedThreadPool(4)
   private val blocker = Blocker.liftExecutorService(blockingPool)

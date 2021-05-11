@@ -26,3 +26,9 @@ final case class TrackerResponse(tracker: Tracker, vehicle: LightVehicle)
 object TrackerResponse {
   implicit val encoder: Encoder[TrackerResponse] = deriveEncoder
 }
+
+final case class VehicleHistoryResponse(positions: List[Position], tracks: List[Track])
+
+object VehicleHistoryResponse {
+  implicit val encoder: Encoder[VehicleHistoryResponse] = deriveEncoder
+}

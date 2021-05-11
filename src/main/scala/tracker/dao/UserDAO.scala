@@ -15,6 +15,8 @@ trait UserDAO {
 
   def update(user: User): Task[User]
 
+  def updatePassword(id: Long, password: String): Task[User]
+
   def markAsDeleted(id: Long): Task[User]
 
   def find(id: Long): Task[Option[User]]
@@ -38,9 +40,6 @@ class DefaultUserDAO(transactor: Transactor[Task], logger: Logger[Task]) extends
       id <-
         sql"""UPDATE USER SET
           name = ${user.name},
-          created_at = ${user.createdAt},
-          deleted_at = ${user.deletedAt},
-          password = ${user.password},
           username = ${user.username},
           roles = ${user.roles.toList} WHERE id = ${user.id}""".update
           .withUniqueGeneratedKeys[Long]("id")
@@ -49,11 +48,21 @@ class DefaultUserDAO(transactor: Transactor[Task], logger: Logger[Task]) extends
     } yield user
   }
 
+  def updatePassword(id: Long, password: String): Task[User] = {
+    for {
+      id <-
+        sql"""UPDATE USER SET PASSWORD = $password WHERE ID = $id""".update
+          .withUniqueGeneratedKeys[Long]("id")
+          .transact(transactor)
+      user <- find(id).map(_.getOrElse(throw new IllegalStateException("Could not find newly created entity!")))
+    } yield user
+  }
+
   override def markAsDeleted(id: Long): Task[User] = {
     val transaction = for {
-      _ <- sql"""UPDATE USER SET DELETED_AT = NOW(), PASSWORD = NULL WHERE ID = $id""".update.run
-      vehicle <- findBy(fr"""WHERE V.ID = $id""", 0, Int.MaxValue)
-    } yield vehicle
+      _ <- sql"""UPDATE USER SET DELETED_AT = NOW(), PASSWORD = '' WHERE ID = $id""".update.run
+      user <- findBy(fr"""WHERE ID = $id""", 0, Int.MaxValue)
+    } yield user
     transaction.transact(transactor).map(_.head)
   }
 

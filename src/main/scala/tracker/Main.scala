@@ -86,7 +86,7 @@ object Main extends ZioServerApp {
       vehicleService = VehicleService(vehicleDAO, vehicleFleetDAO)
       positionService = PositionService(positionDAO, loggerFactory, lastPositionCache, gpxFileBuilder)
       trackService = TrackService(trackDAO, positionDAO, loggerFactory)
-      trackerService = TrackerService(trackerDAO, userDAO, configuration.jwt, loggerFactory)
+      trackerService = TrackerService(trackerDAO, userDAO, configuration, loggerFactory)
       mqttService = MqttService(loggerFactory, trackerService, positionService, trackService, topic, DefaultAccessTokenParser, configuration)
 
       httpClient <- Http4sBlazeClientModule.make[Task](configuration.client, executorModule.executionContext)
