@@ -2,35 +2,37 @@ version: "3"
 
 services:
   server:
-    image: jehlima2/tracker-server:1.0
+    image: cz.cvut.fit/tracker-server:1.0
     ports:
       - 8085:8080
     links:
       - "mqtt:mqtt"
     environment:
       - JWT_SECRET=mH@6@*6dp*p^8Xhegecv
-      - JWT_EXPIRATION=86400
-      - DB_JDBC_URL=jdbc:h2:/DB/tracker-dev;MODE=MySQL
+      - JWT_EXPIRATION=600
+      - DB_JDBC_URL= jdbc:h2:/DB/tracker;INIT=RUNSCRIPT FROM './create.sql';MODE=MySQL
       - DB_USERNAME=
       - DB_PASSWORD=
-      - MQTT_HOST=mqtt
+      - MQTT_HOST=broker
       - MQTT_PORT=8883
-      - MQTT_TOPIC=sledovac-dev
+      - MQTT_TOPIC=sledovac
       - MQTT_SSL=true
-      - MQTT_SUBSCRIBER_NAME=tracker-rpi-dev
+      - MQTT_SUBSCRIBER_NAME=tracker-rpi
+      - MQTT_USERNAME=tracker
+      - MQTT_PASSWORD=tracker
       - FRONTEND_DIR=/front/
     volumes:
-      - /home/dizider/DB:/DB
-      - /home/dizider/front:/front
+      - ~/DB:/DB
+      - ~/front:/front
     restart: always
   mqtt:
     image: eclipse-mosquitto:2-openssl
     ports:
       - 8883:8883
     volumes:
-      - /etc/letsencrypt/live/dev.jehlicka.eu/chain.pem:/mosquitto/certs/chain.pem
-      - /etc/letsencrypt/live/dev.jehlicka.eu/cert.pem:/mosquitto/certs/cert.pem
-      - /etc/letsencrypt/live/dev.jehlicka.eu/privkey.pem:/mosquitto/certs/privkey.pem
+      - ~/chain.pem:/mosquitto/certs/chain.pem
+      - ~/cert.pem:/mosquitto/certs/cert.pem
+      - ~/privkey.pem:/mosquitto/certs/privkey.pem
       - /etc/configs/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - /data/mosquitto:/mosquitto/data
       - /var/log/mosquitto:/mosquitto/log
