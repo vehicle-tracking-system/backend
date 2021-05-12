@@ -76,7 +76,6 @@ object WebSocketMessage {
     new DefaultWebSocketMessage(
       Position,
       None,
-      //position.asJson.deepMerge(Json.fromFields(List(("isMoving", Json.fromBoolean(isMoving))))).noSpacesSortKeys
       position.asJson
     )
   def vehicle(vehicles: List[Vehicle], token: Option[String] = None): WebSocketMessage =

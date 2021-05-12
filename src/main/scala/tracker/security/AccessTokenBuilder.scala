@@ -9,6 +9,11 @@ import java.time.Clock
 object AccessTokenBuilder {
   implicit val clock: Clock = Clock.systemUTC
 
+  /**
+    * Create new JWT token with `payload`. Token lifetime is to `expiration` (seconds) in JWT config
+    *
+    * @return Serialized JWT token
+    */
   def createToken(payload: AccessTokenPayload, jwtConfig: JwtConfig): String = {
     val header = JwtHeader(jwtConfig.algorithm)
     val claim = JwtClaim(payload.asJson.noSpacesSortKeys).issuedNow.expiresIn(jwtConfig.expiration)
@@ -16,6 +21,12 @@ object AccessTokenBuilder {
     JwtCirce.encode(header, claim, jwtConfig.secret)
   }
 
+  /**
+    * Create new JWT token with `payload`. Token lifetime in not limited. Use this method carefully! The token must be revocable on server side.
+    * Otherwise it can be a serious security issue.
+    *
+    * @return Serialized JWT token with unlimited lifetime
+    */
   def createUnlimitedToken(payload: AccessTokenPayload, jwtConfig: JwtConfig): String = {
     val header = JwtHeader(jwtConfig.algorithm)
     val claim = JwtClaim(payload.asJson.noSpacesSortKeys).issuedNow

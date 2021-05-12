@@ -5,14 +5,7 @@ import io.circe.generic.semiauto.deriveDecoder
 
 import java.time.ZonedDateTime
 
-sealed trait UserRequest {
-//  def user: User
-//  def id: Long
-//  def username: String
-//  def name: String
-//  def roles: List[Role]
-//  def password: String
-}
+sealed trait UserRequest
 
 final case class LoginRequest(username: String, password: String)
 
@@ -24,17 +17,6 @@ final case class NewUserRequest(username: String, name: String, roles: List[Role
 
 object NewUserRequest {
   implicit val decoder: Decoder[NewUserRequest] = deriveDecoder
-//    (c: HCursor) =>
-//      for {
-//        username <- c.downField("username").as[String]
-//        name <- c.downField("name").as[String]
-//        roles <- c.downField("roles").as[List[Role]]
-//        password <- c.downField("password").as[String]
-//      } yield {
-//        new NewUserRequest(
-//          User(None, name, ZonedDateTime.now(), None, PasswordUtility.hashPassword(password), username, roles.toSet)
-//        )
-//      }
 }
 
 final case class NewPasswordRequest(password: String)
@@ -47,17 +29,6 @@ final case class UpdateUserRequest(id: Long, username: Option[String], name: Opt
 
 object UpdateUserRequest {
   implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder
-//    (c: HCursor) =>
-//    for {
-//      id <- c.downField("id").as[Long]
-//      username <- c.downField("username").as[String]
-//      name <- c.downField("name").as[String]
-//      roles <- c.downField("roles").as[List[Role]]
-//    } yield {
-//      new UpdateUserRequest(
-//        User(Some(id), name, ZonedDateTime.now(), None, "", username, roles.toSet)
-//      )
-//    }
 }
 
 final case class PositionRequest(position: Position)
@@ -150,13 +121,6 @@ final case class NewTrackerRequest(name: String, vehicleId: Long) extends Tracke
 
 object NewTrackerRequest {
   implicit val decoder: Decoder[NewTrackerRequest] = deriveDecoder
-//    (c: HCursor) =>
-//    for {
-//      name <- c.downField("name").as[String]
-//      vehicleId <- c.downField("vehicleId").as[Long]
-//    } yield {
-//      new NewTrackerRequest(LightTracker(None, name, vehicleId, "N/A", ZonedDateTime.now(), None))
-//    }
 }
 
 final case class UpdateVehicleRequest(data: Vehicle) extends VehicleRequest

@@ -64,7 +64,6 @@ class WebSocketService(
                   stringToken <- IO.fromEither(jwt.toRight("Access token must be provided"))
                   token <- IO.fromEither(tokenParser.parseAccessToken(stringToken, config.jwt.secret)).mapError(e => s"Invalid token $e")
                   payload <- IO.fromEither(payload.as[SubscribeMessage])
-//                  id <- IO.fromEither(payload.id.toRight("Could not convert vehicle ID to number"))
                   vehicleOpt <- vehicleService.get(payload.id).mapError(e => s"${e.getClass.getName}: ${e.getMessage}")
                   _ <- IO.fromEither(vehicleOpt.toRight("Vehicle not found"))
                   _ <- logger.debug(s"New subscription for vehicle: $payload from user ${token.clientId} with roles ${token.clientRoles}")
@@ -83,7 +82,6 @@ class WebSocketService(
                   stringToken <- IO.fromEither(jwt.toRight("Access token must be provided"))
                   token <- IO.fromEither(tokenParser.parseAccessToken(stringToken, config.jwt.secret)).mapError(e => s"Invalid token $e")
                   payload <- IO.fromEither(payload.as[SubscribeMessage])
-//                  id <- IO.fromEither(payload.toLongOption.toRight("Could not convert vehicle ID to number"))
                   _ <- logger.debug(s"Unsubscribing vehicle: $payload from user ${token.clientId} with roles ${token.clientRoles}")
                   vehicles <- subscribedVehicles.modify(sv => (sv - payload.id, sv - payload.id))
                 } yield vehicles

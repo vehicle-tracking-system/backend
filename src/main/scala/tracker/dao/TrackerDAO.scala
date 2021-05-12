@@ -10,27 +10,83 @@ import doobie.implicits.javatime._
 import tracker.{LightTracker, LightVehicle, Tracker}
 import zio.Task
 
+/**
+  * Provides access and operations with Tracker records in database.
+  */
 trait TrackerDAO {
+
+  /**
+    * Persist new tracker.
+    *
+    * If tracker is already exists, new one will be created with same data but with another ID. For update exiting tracker use `update` method.
+    * @param tracker tracker to be saved (without unique identifier)
+    * @return Newly inserted tracker with unique identifier
+    */
   def persist(tracker: LightTracker): Task[Tracker]
 
+  /**
+    * @param tracker tracker to be removed from database
+    * @return number of trackers removed from database
+    */
   def delete(tracker: LightTracker): Task[Int]
 
+  /**
+    * Mark tracker as deleted, but the entity will be still save in database.
+    * @param id identifier of tracker to be marked
+    * @return tracker with updated deletedAt field
+    */
   def markAsDeleted(id: Long): Task[Tracker]
 
+  /**
+    * This method update all columns except access token. If you want to update token, you need to use `updateAccessToken` method.
+    *
+    * @param tracker modified tracker (tracker is matched with the tracker in database by ID)
+    * @return updated tracker from database
+    */
   def update(tracker: LightTracker): Task[Tracker]
 
+  /**
+    * @param id identifier of tracker
+    * @param token new token to be persist to specified tracker
+    * @return updated tracker with new access token
+    */
   def updateAccessToken(id: Long, token: String): Task[Tracker]
 
+  /**
+    * @param id identifier of tracker
+    * @return Some[Tracker] if tracker with specified identifier is persist in database, otherwise None
+    */
   def find(id: Long): Task[Option[Tracker]]
 
+  /**
+    * @param offset first `offset` trackers in result will be ignore
+    * @param limit trackers after `offset` + `limit` in results will be ignored
+    * @return "Page" of trackers
+    */
   def findAll(offset: Int, limit: Int): Task[List[Tracker]]
 
+  /**
+    * @param offset first `offset` trackers in result will be ignore
+    * @param limit trackers after `offset` + `limit` in results will be ignored
+    * @return "Page" of tracker not marked as deleted
+    */
   def findAllActive(offset: Int, limit: Int): Task[List[Tracker]]
 
+  /**
+    * @param vehicleId identifier of vehicle
+    * @return List of trackers belongs to specified vehicle
+    */
   def findByVehicle(vehicleId: Long): Task[List[Tracker]]
 
+  /**
+    * @param token tracker's access token
+    * @return Some[Tracker] if tracker with specified token is persist in database, otherwise None
+    */
   def findByToken(token: String): Task[Option[Tracker]]
 
+  /**
+    * @return count of trackers in database
+    */
   def count(): Task[Int]
 }
 

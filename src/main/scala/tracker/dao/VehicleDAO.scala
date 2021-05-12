@@ -12,25 +12,73 @@ import zio.Task
 import zio.interop.catz._
 import doobie.implicits.javatime._
 
+/**
+  * Provides access and operations with Vehicle records in database.
+  */
 trait VehicleDAO {
+
+  /**
+    * Persist new user.
+    *
+    * If vehicle is already exists, new one will be created with same data but with another ID. For update exiting vehicle use `update` method.
+    * @param vehicle vehicle to be saved (without unique identifier)
+    * @return Newly inserted vehicle with unique identifier
+    */
   def persist(vehicle: LightVehicle): Task[Vehicle]
 
+  /**
+    * @param vehicle modified vehicle (vehicle is matched with the vehicle in database by ID)
+    * @return updated user from database
+    */
   def update(vehicle: Vehicle): Task[Vehicle]
 
+  /**
+    * @param vehicle vehicles to be removed from database
+    * @return number of vehicles removed from database
+    */
   def delete(vehicle: Vehicle): Task[Int]
 
+  /**
+    * Mark vehicle as deleted, but the entity will be still save in database.
+    * @param vehicleId identifier of vehicle to be marked
+    * @return vehicle with updated deletedAt field
+    */
   def markAsDeleted(vehicleId: Long): Task[Vehicle]
 
+  /**
+    * @param id identifier of vehicle
+    * @return Some[Vehicle] if vehicle with specified identifier is persist in database, otherwise None
+    */
   def find(id: Long): Task[Option[Vehicle]]
 
+  /**
+    * @param offset first `offset` vehicles in result will be ignore
+    * @param limit vehicles after `offset` + `limit` in results will be ignored
+    * @return "Page" of vehicles
+    */
   def findAll(offset: Int, limit: Int): Task[List[Vehicle]]
 
+  /**
+    * @param offset first `offset` vehicles in result will be ignore
+    * @param limit vehicles after `offset` + `limit` in results will be ignored
+    * @return "Page" of vehicles not marked as deleted
+    */
   def findAllActive(offset: Int, limit: Int): Task[List[Vehicle]]
 
+  /**
+    * @param ids list of vehicle identifier to found
+    * @return list of vehicles that matches one of the `ids`
+    */
   def findList(ids: List[Long]): Task[List[Vehicle]]
 
+  /**
+    * @return count of vehicles in database
+    */
   def count(): Task[Int]
 
+  /**
+    * @return count of vehicles in database that is not marked as deleted
+    */
   def countActive(): Task[Int]
 }
 

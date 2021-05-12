@@ -13,21 +13,65 @@ import zio.Task
 
 import java.time.ZonedDateTime
 
+/**
+  * Provides access and operations with Track records in database.
+  */
 trait TrackDAO {
+
+  /**
+    * Persist new track.
+    *
+    * If track is already exists, new one will be created with same data but with another ID. For update exiting track use `update` method.
+    * @param track track to be saved (without unique identifier)
+    * @return Newly inserted track with unique identifier
+    */
   def persist(track: LightTrack): Task[Track]
 
+  /**
+    * @param track modified track (track is matched with the track in database by ID)
+    * @return Updated track from database
+    */
   def update(track: LightTrack): Task[Track]
 
+  /**
+    * @param id ID of track you are looking for
+    * @return Some[Track] if track with specified identifier exists in database, otherwise None
+    */
   def find(id: Long): Task[Option[Track]]
 
+  /**
+    * @param offset first `offset` tracks in result will be ignore
+    * @param limit tracks after `offset` + `limit` in results will be ignored
+    * @return "Page" of tracks
+    */
   def findAll(offset: Int, limit: Int): Task[List[Track]]
 
+  /**
+    * @param vehicleId identifier of vehicle
+    * @param offset first `offset` tracks in result will be ignore
+    * @param limit tracks after `offset` + `limit` in results will be ignored
+    * @return "Page" of tracks belongs to vehicle with `vehicleId`
+    */
   def findByVehicle(vehicleId: Long, offset: Int, limit: Int): Task[List[Track]]
 
+  /**
+    * Same as `findByVehicle` method, but the parameter are given in human readable format (as time range)
+    * @param vehicleId identifier od vehicle
+    * @param since lower range limit
+    * @param until upper range limit
+    * @return all tracks belongs to vehicle with identifier equals to `vehicleId` and the track must be newer then `since` and older then `until`
+    */
   def findTracksInRage(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Track]]
 
+  /**
+    * @param vehicleId identifier of vehicle
+    * @return total count of tracks in database belongs to specified vehicle
+    */
   def countVehicleTracks(vehicleId: Long): Task[Int]
 
+  /**
+    * @return count of tracks in database
+    */
   def count(): Task[Int]
 }
 

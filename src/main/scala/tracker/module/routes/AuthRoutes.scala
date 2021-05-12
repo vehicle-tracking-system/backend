@@ -9,7 +9,8 @@ import zio.interop.catz._
 
 /**
   * Routes handling user authorization and auth user modifications.
-  * @param userService
+  *
+  * @param userService service providing operations with Users
   */
 class AuthRoutes(userService: UserService) extends AuthedRoutesPart {
   override def routes: AuthedRoutes[tracker.User, Task] =

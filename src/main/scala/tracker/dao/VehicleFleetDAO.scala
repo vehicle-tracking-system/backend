@@ -7,15 +7,42 @@ import tracker.{Vehicle, VehicleFleet}
 import zio.Task
 import zio.interop.catz._
 
+/**
+  * Provides access and operations with VehicleFleet records in database.
+  */
 trait VehicleFleetDAO {
+
+  /**
+    * Persist new vehicleFleet.
+    *
+    * If vehicleFleet is already exists, new one will be created with same data but with another ID. For update exiting vehicleFleet use `update` method.
+    * @param vehicleFleet vehicleFleet to be saved (without unique identifier)
+    * @return Newly inserted vehicleFleet with unique identifier
+    */
   def persist(vehicleFleet: VehicleFleet): Task[Int]
 
+  /**
+    * @param vehicleFleet vehicleFleets to be removed from database
+    * @return number of vehicleFleets removed from database
+    */
   def delete(vehicleFleet: VehicleFleet): Task[Int]
 
+  /**
+    * @param id identifier of vehicleFleet
+    * @return Some[VehicleFleet] if vehicleFleet with specified identifier is persist in database, otherwise None
+    */
   def find(id: Long): Task[Option[VehicleFleet]]
 
+  /**
+    * @param vehicleFleet
+    * @return
+    */
   def persistList(vehicleFleet: List[VehicleFleet]): Task[Int]
 
+  /**
+    * @param vehicle
+    * @return
+    */
   def setToVehicle(vehicle: Vehicle): Task[Int]
 }
 

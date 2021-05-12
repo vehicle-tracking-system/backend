@@ -16,22 +16,75 @@ import java.time.ZonedDateTime
   * Provides access and operations with Position records in database.
   */
 trait PositionDAO {
+
+  /**
+    * Persist new position.
+    *
+    * If position is already exists, new one will be created with same data but with another ID. For update exiting position use `update` method.
+    * @param position position to be saved (without unique identifier)
+    * @return Newly inserted position with unique identifier
+    */
   def persist(position: Position): Task[Position]
 
+  /**
+    * Persist list of new positions.
+    *
+    * This method has the same behaviour as `persist`. This method will not update positions, but only creates new ones. For update list of position
+    *  call on each position method `update`.
+    * @param positions positions to be saved (without unique identifiers)
+    * @return Number of inserted positions
+    */
   def persistList(positions: List[Position]): Task[Int]
 
+  /**
+    * Update position
+    *
+    * @param position modified position (position is matched with the position in database by ID)
+    * @return Updated position from database
+    */
   def update(position: Position): Task[Position]
 
+  /**
+    * @param id ID of position you are looking for
+    * @return Some[Position] if position with specified identifier exists in database, otherwise None
+    */
   def find(id: Long): Task[Option[Position]]
 
+  /**
+    * @param vehicleId identifier of vehicle
+    * @param offset first `offset` positions in result will be ignore
+    * @param limit positions after `offset` + `limit` in results will be ignored
+    * @return "Page" of positions belongs to vehicle with `vehicleId`
+    */
   def findByVehicle(vehicleId: Long, offset: Int = 0, limit: Int = 20): Task[List[Position]]
 
+  /**
+    * Same as `findByVehicle` method, but the parameter are given in human readable format (as time range)
+    * @param vehicleId identifier od vehicle
+    * @param since lower range limit
+    * @param until upper range limit
+    * @return all positions belongs to vehicle with identifier equals to `vehicleId` and the position must be newer then `since` and older then `until`
+    */
   def findVehicleHistory(vehicleId: Long, since: ZonedDateTime, until: ZonedDateTime): Task[List[Position]]
 
+  /**
+    * @param vehicleId identifier of vehicle
+    * @return latest position belong to vehicle with identifier equals to `vehicleId`
+    */
   def findLastVehiclePosition(vehicleId: Long): Task[Option[Position]]
 
+  /**
+    * @param trackId identifier of track
+    * @return positions of requested track. When there are no track with `trackId` in database, None is returned.
+    */
   def findByTrack(trackId: Long): Task[Option[NonEmptyList[Position]]]
 
+  /**
+    * @param vehicleId identifier of vehicle
+    * @param month requesting month
+    * @param year requesting year
+    * @return list of day number in specific `month` where at least one track was done
+    */
   def findActiveDays(vehicleId: Long, month: Int, year: Int): Task[List[Int]]
 }
 

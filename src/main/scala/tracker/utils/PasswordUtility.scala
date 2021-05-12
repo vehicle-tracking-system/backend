@@ -8,7 +8,7 @@ import javax.crypto.spec.PBEKeySpec
 import org.log4s.{getLogger, Logger}
 
 /**
-  * Providing operations with passwords.
+  * Providing operations with passwords, like hashing, checking etc.
   */
 class PasswordUtility {
   val DefaultIterations = 10000

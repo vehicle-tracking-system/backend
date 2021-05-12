@@ -9,6 +9,11 @@ import tracker.service._
 import zio.Task
 import zio.interop.catz._
 
+/**
+  * Routes handling request for GPX files.
+  *
+  * @param positionService service providing operations with Positions
+  */
 class GPXRoutes(positionService: PositionService) extends AuthedRoutesPart {
   override def routes: AuthedRoutes[User, Task] =
     AuthedRoutes.of {

@@ -17,6 +17,9 @@ import zio.interop.catz.implicits._
 
 import scala.concurrent.duration._
 
+/**
+  * Inspired by: https://github.com/alarm-garage/alarm-garage-server/blob/4b05e4d51b9204ef3762a1afba86c37dfc6755a8/src/main/scala/cz/jenda/alarm/garage/MqttModule.scala
+  */
 object MqttModule {
   def make(processMessage: Message => Task[Unit], config: Configuration, logger: Logger[Task]): Resource[Task, MqttModule.type] = {
 
@@ -83,7 +86,7 @@ object MqttModule {
   ): ConnectionState => Task[Unit] = {
     case Error(e @ ConnectionFailure(reason)) => started.set(Some(Some(e))) *> logger.error(reason.show)
     case Error(ProtocolError)                 => logger.error("Protocol error")
-    case Disconnected                         => started.get.flatMap(s => if (s.nonEmpty) logger.warn("Transport disconnected") else Task.unit)
+    case Disconnected                         => started.get.flatMap(s => logger.warn("Transport disconnected").when(s.nonEmpty))
     case Connecting(nextDelay, retriesSoFar)  => logger.warn(s"Transport connecting. $retriesSoFar attempt(s) so far, next in $nextDelay")
     case Connected                            => logger.info("Transport connected")
     case SessionStarted                       => started.set(Some(None)) *> logger.info("Session started")

@@ -10,27 +10,82 @@ import tracker.User
 import zio.Task
 import zio.interop.catz._
 
+/**
+  * Provides access and operations with User records in database.
+  */
 trait UserDAO {
+
+  /**
+    * Persist new user .
+    *
+    * If user is already exists, new one will be created with same data but with another ID. For update exiting user use `update` method.
+    * @param user user to be saved (without unique identifier)
+    * @return Newly inserted user with unique identifier
+    */
   def persist(user: User): Task[User]
 
+  /**
+    * This method update all columns except password. If you want to update password, you need to use `updatePassword` method.
+    *
+    * @param user modified user (user is matched with the user in database by ID)
+    * @return updated user from database
+    */
   def update(user: User): Task[User]
 
+  /**
+    * @param id identifier of user
+    * @param password new password to be persist to specified user
+    * @return updated user with new password
+    */
   def updatePassword(id: Long, password: String): Task[User]
 
+  /**
+    * Mark user as deleted, but the entity will be still save in database.
+    * @param id identifier of user to be marked
+    * @return user with updated deletedAt field
+    */
   def markAsDeleted(id: Long): Task[User]
 
+  /**
+    * @param id identifier of user
+    * @return Some[User] if user with specified identifier is persist in database, otherwise None
+    */
   def find(id: Long): Task[Option[User]]
 
+  /**
+    * @param offset first `offset` users in result will be ignore
+    * @param limit users after `offset` + `limit` in results will be ignored
+    * @return "Page" of users
+    */
   def findAll(offset: Int, limit: Int): Task[List[User]]
 
+  /**
+    * @param offset first `offset` users in result will be ignore
+    * @param limit users after `offset` + `limit` in results will be ignored
+    * @return "Page" of users not marked as deleted
+    */
   def findAllActive(offset: Int, limit: Int): Task[List[User]]
 
+  /**
+    * @param username user's username
+    * @return Some[User] if user with specified username is persist in database, otherwise None
+    */
   def findByUsername(username: String): Task[Option[User]]
 
+  /**
+    * @param username user's username
+    * @return Some[User] if user with specified username is persist in database and is not mark as deleted, otherwise None
+    */
   def findActiveByUsername(username: String): Task[Option[User]]
 
+  /**
+    * @return count of users in database
+    */
   def count(): Task[Int]
 
+  /**
+    * @return count of users in database that is not marked as deleted
+    */
   def countActive(): Task[Int]
 }
 

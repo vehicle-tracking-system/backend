@@ -13,6 +13,13 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 trait AccessTokenParser {
+
+  /**
+    * Parse access token and check its integrity.
+    * @param accessToken
+    * @param secret
+    * @return Parsed access token as Right if the provided `accessToken` string is valid and parsable, otherwise Left with error message.
+    */
   def parseAccessToken(accessToken: String, secret: String): Either[String, AccessToken]
 }
 

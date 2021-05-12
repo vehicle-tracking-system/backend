@@ -11,6 +11,11 @@ import tracker.module.routes.RoutesImplicits._
 import zio.Task
 import zio.interop.catz._
 
+/**
+  * Routes handling client HTTP request about Trackers.
+  *
+  * @param trackerService service providing API for operations with Trackers
+  */
 class TrackerRoutes(trackerService: TrackerService) extends AuthedRoutesPart {
   override def routes: AuthedRoutes[tracker.User, Task] =
     AuthedRoutes.of {

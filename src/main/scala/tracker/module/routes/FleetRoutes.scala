@@ -12,7 +12,8 @@ import zio.interop.catz._
 
 /**
   * Routes handling client HTTP request about Fleets.
-  * @param fleetService - service providing API for operations with Fleets
+  *
+  * @param fleetService service providing API for operations with Fleets
   */
 class FleetRoutes(fleetService: FleetService) extends AuthedRoutesPart {
   override def routes: AuthedRoutes[tracker.User, Task] =

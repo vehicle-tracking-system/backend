@@ -10,6 +10,11 @@ import tracker.Roles.Reader
 import zio.Task
 import zio.interop.catz._
 
+/**
+  * Routes handling client HTTP request about Tracks.
+  *
+  * @param trackService service providing API for operations with Tracks
+  */
 class TrackRoutes(trackService: TrackService) extends AuthedRoutesPart {
   override def routes: AuthedRoutes[tracker.User, Task] =
     AuthedRoutes.of {
