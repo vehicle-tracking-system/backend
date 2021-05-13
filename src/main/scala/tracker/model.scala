@@ -137,7 +137,9 @@ object Vehicle {
 case class LightFleet(id: Option[Long] = None, name: String) {
   lazy val ID: Long = id.getOrElse(throw new IllegalStateException("LightFleet without identifier"))
 }
-final case class Fleet(fleet: LightFleet, vehicles: List[LightVehicle])
+final case class Fleet(fleet: LightFleet, vehicles: List[LightVehicle]) {
+  def toLight: LightFleet = this.fleet
+}
 
 object LightFleet {
   implicit val encoder: Encoder[LightFleet] = deriveEncoder
@@ -178,7 +180,9 @@ final case class LightTrack(id: Option[Long], vehicleId: Long, timestamp: ZonedD
   lazy val ID: Long = id.getOrElse(throw new IllegalStateException("LightTrack without identifier"))
 }
 
-final case class Track(track: LightTrack, vehicle: LightVehicle)
+final case class Track(track: LightTrack, vehicle: LightVehicle) {
+  def toLight: LightTrack = this.track
+}
 
 object LightTrack {
   implicit val encoder: Encoder[LightTrack] = deriveEncoder
@@ -201,7 +205,9 @@ final case class LightTracker(
   lazy val ID: Long = id.getOrElse(throw new IllegalStateException("LightTracker without identifier"))
 }
 
-final case class Tracker(tracker: LightTracker, vehicle: LightVehicle)
+final case class Tracker(tracker: LightTracker, vehicle: LightVehicle) {
+  def toLight: LightTracker = this.tracker
+}
 
 object LightTracker {
   implicit val encoder: Encoder[LightTracker] = deriveEncoder

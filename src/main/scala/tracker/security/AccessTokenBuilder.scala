@@ -7,14 +7,13 @@ import tracker.config.JwtConfig
 import java.time.Clock
 
 object AccessTokenBuilder {
-  implicit val clock: Clock = Clock.systemUTC
 
   /**
     * Create new JWT token with `payload`. Token lifetime is to `expiration` (seconds) in JWT config
     *
     * @return Serialized JWT token
     */
-  def createToken(payload: AccessTokenPayload, jwtConfig: JwtConfig): String = {
+  def createToken(payload: AccessTokenPayload, jwtConfig: JwtConfig)(implicit clock: Clock = Clock.systemUTC()): String = {
     val header = JwtHeader(jwtConfig.algorithm)
     val claim = JwtClaim(payload.asJson.noSpacesSortKeys).issuedNow.expiresIn(jwtConfig.expiration)
 
@@ -27,7 +26,7 @@ object AccessTokenBuilder {
     *
     * @return Serialized JWT token with unlimited lifetime
     */
-  def createUnlimitedToken(payload: AccessTokenPayload, jwtConfig: JwtConfig): String = {
+  def createUnlimitedToken(payload: AccessTokenPayload, jwtConfig: JwtConfig)(implicit clock: Clock = Clock.systemUTC()): String = {
     val header = JwtHeader(jwtConfig.algorithm)
     val claim = JwtClaim(payload.asJson.noSpacesSortKeys).issuedNow
 

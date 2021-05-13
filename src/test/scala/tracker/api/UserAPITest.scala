@@ -1,4 +1,4 @@
-package tracker.service
+package tracker.api
 
 import fs2.text.utf8Decode
 import io.circe.Json
@@ -11,8 +11,9 @@ import slog4s.slf4j.Slf4jFactory
 import tracker.{Page, Roles, User}
 import tracker.config.JwtConfig
 import tracker.dao.UserDAO
-import tracker.mocked.{TestClock, UserDAOTest}
+import tracker.mocked.{Store, TestClock, UserDAOTest}
 import tracker.module.routes.UserRoutes
+import tracker.service.UserService
 import tracker.utils.PasswordUtility
 import zio.Task
 import zio.interop.catz.taskConcurrentInstance
@@ -60,14 +61,14 @@ object UserAPITest extends DefaultRunnableSpec {
 
     suite("User routes suite")(
       testM("Insert user") {
-        val dao: UserDAO = UserDAOTest(List.empty)
+        val dao: UserDAO = UserDAOTest(Store())
         for {
           _ <- dao.persist(adminUser)
           cnt <- dao.count()
         } yield assert(cnt)(equalTo(1))
       },
       testM("Read users without permissions") {
-        val dao: UserDAO = UserDAOTest(List.empty)
+        val dao: UserDAO = UserDAOTest(Store())
         val service: UserRoutes = new UserRoutes(
           UserService(
             dao,
@@ -82,7 +83,7 @@ object UserAPITest extends DefaultRunnableSpec {
         } yield assert(response.status)(equalTo(Status.Forbidden))
       },
       testM("Query existing users") {
-        val dao: UserDAO = UserDAOTest(List.empty)
+        val dao: UserDAO = UserDAOTest(Store())
         val service: UserRoutes = new UserRoutes(
           UserService(dao, JwtConfig("secret", 100, JwtAlgorithm.HMD5), Slf4jFactory[Task].withoutContext.loggerFactory)
         )
@@ -95,7 +96,7 @@ object UserAPITest extends DefaultRunnableSpec {
         } yield assert(body)(equalTo(adminUserJson)) && assert(response.status)(equalTo(Status.Ok))
       },
       testM("Query non existing user") {
-        val dao: UserDAO = UserDAOTest(List.empty)
+        val dao: UserDAO = UserDAOTest(Store())
         val service: UserRoutes = new UserRoutes(
           UserService(dao, JwtConfig("secret", 100, JwtAlgorithm.HMD5), Slf4jFactory[Task].withoutContext.loggerFactory)
         )
@@ -108,7 +109,7 @@ object UserAPITest extends DefaultRunnableSpec {
         } yield assert(body)(equalTo(""""User not found"""")) && assert(response.status)(equalTo(Status.NotFound))
       },
       testM("Query list of users") {
-        val dao: UserDAO = UserDAOTest(List.empty)
+        val dao: UserDAO = UserDAOTest(Store())
         val service: UserRoutes = new UserRoutes(
           UserService(dao, JwtConfig("secret", 100, JwtAlgorithm.HMD5), Slf4jFactory[Task].withoutContext.loggerFactory)
         )
@@ -123,7 +124,7 @@ object UserAPITest extends DefaultRunnableSpec {
         } yield assert(body)(equalTo(expectedList))
       },
       testM("Add user") {
-        val dao: UserDAO = UserDAOTest(List.empty)
+        val dao: UserDAO = UserDAOTest(Store())
         val clock: TestClock = new TestClock(startTime, Duration.ofSeconds(1))
         val service: UserRoutes = new UserRoutes(
           UserService(

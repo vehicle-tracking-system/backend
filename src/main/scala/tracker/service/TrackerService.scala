@@ -4,14 +4,14 @@ import cats.implicits.catsSyntaxFlatMapOps
 import io.circe.Json
 import slog4s.{Logger, LoggerFactory}
 import tracker._
-import tracker.config.Configuration
+import tracker.config.{JwtConfig, MqttConfig}
 import tracker.dao.{TrackerDAO, UserDAO}
 import tracker.security.{AccessTokenBuilder, AccessTokenPayload}
 import tracker.utils.{Clock, DefaultClock}
 import zio.interop.catz._
 import zio.Task
 
-class TrackerService(trackerDAO: TrackerDAO, config: Configuration, logger: Logger[Task], clock: Clock) {
+class TrackerService(trackerDAO: TrackerDAO, configMqtt: MqttConfig, configJwt: JwtConfig, logger: Logger[Task], clock: Clock) {
   val pagination: Pagination[Tracker] = DefaultPagination(trackerDAO.findAllActive, () => trackerDAO.count())
 
   def persist(request: NewTrackerRequest): Task[Tracker] = {
@@ -70,11 +70,11 @@ class TrackerService(trackerDAO: TrackerDAO, config: Configuration, logger: Logg
                   ("token", Json.fromString(t.tracker.token)),
                   ("id", Json.fromLong(t.tracker.ID)),
                   ("vehicleId", Json.fromLong(t.vehicle.ID)),
-                  ("mqttHost", Json.fromString(config.mqtt.host)),
-                  ("mqttPort", Json.fromInt(config.mqtt.port)),
-                  ("mqttUsername", Json.fromString(config.mqtt.user.getOrElse(""))),
-                  ("mqttPassword", Json.fromString(config.mqtt.password.getOrElse(""))),
-                  ("mqttTopic", Json.fromString(config.mqtt.topic))
+                  ("mqttHost", Json.fromString(configMqtt.host)),
+                  ("mqttPort", Json.fromInt(configMqtt.port)),
+                  ("mqttUsername", Json.fromString(configMqtt.user.getOrElse(""))),
+                  ("mqttPassword", Json.fromString(configMqtt.password.getOrElse(""))),
+                  ("mqttTopic", Json.fromString(configMqtt.topic))
                 )
                 .noSpacesSortKeys
                 .toCharArray
@@ -97,7 +97,7 @@ class TrackerService(trackerDAO: TrackerDAO, config: Configuration, logger: Logg
   private def generateAccessToken(trackerId: Long): String = {
     AccessTokenBuilder.createUnlimitedToken(
       AccessTokenPayload(trackerId, Set(Roles.Tracker)),
-      config.jwt
+      configJwt
     )
   }
 }
@@ -106,11 +106,12 @@ object TrackerService {
   def apply(
       trackerDAO: TrackerDAO,
       userDAO: UserDAO,
-      config: Configuration,
+      configMqtt: MqttConfig,
+      configJwt: JwtConfig,
       loggerFactory: LoggerFactory[Task],
       clock: Clock = DefaultClock
   ): TrackerService = {
     userDAO.count()
-    new TrackerService(trackerDAO, config, loggerFactory.make("tracker-service"), clock)
+    new TrackerService(trackerDAO, configMqtt, configJwt, loggerFactory.make("tracker-service"), clock)
   }
 }

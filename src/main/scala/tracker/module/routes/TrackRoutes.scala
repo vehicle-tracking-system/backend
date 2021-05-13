@@ -28,7 +28,12 @@ class TrackRoutes(trackService: TrackService) extends AuthedRoutesPart {
         }
       case request @ GET -> Root :? IdQueryParamMatcher(id) as _ =>
         request.withRoles(Reader) {
-          trackService.get(id).flatMap(Ok(_))
+          trackService
+            .get(id)
+            .flatMap {
+              case Some(route) => Ok(route)
+              case None        => NotFound()
+            }
         }
       case request @ GET -> Root / "positions" :? IdQueryParamMatcher(id) as _ =>
         request.withRoles(Reader) {

@@ -1,10 +1,10 @@
 package tracker.mocked
 
-import tracker.{LightFleet, LightVehicle, Vehicle}
+import tracker.{LightVehicle, Vehicle}
 import tracker.dao.VehicleDAO
 import zio.Task
 
-class VehicleDAOMock(var store: List[Vehicle] = List.empty, vehicleFleetDaoMock: VehicleFleetDaoMock) extends VehicleDAO with DAOMock[Vehicle] {
+case class VehicleDAOMock(var store: Store) extends VehicleDAO with DAOMock[Vehicle] {
   override def persist(vehicle: LightVehicle): Task[Vehicle] =
     Task.effect {
       maxId = maxId + 1
@@ -17,25 +17,25 @@ class VehicleDAOMock(var store: List[Vehicle] = List.empty, vehicleFleetDaoMock:
         ),
         List.empty
       )
-      store = store.appended(v)
+      store.vehicles = store.vehicles.appended(v.toLight)
       v
     }
 
   override def update(vehicle: Vehicle): Task[Vehicle] =
     Task.effect {
-      val size = store.size
-      store = store.filter(p => p.vehicle.id != vehicle.vehicle.id)
-      if (size == store.size) {
+      val size = store.vehicles.size
+      store.vehicles = store.vehicles.filter(p => p.id != vehicle.vehicle.id)
+      if (size == store.vehicles.size) {
         throw new IllegalStateException()
       } else {
-        store = store.appended(vehicle)
+        store.vehicles = store.vehicles.appended(vehicle.toLight)
         vehicle
       }
     }
 
   override def delete(vehicle: Vehicle): Task[Int] = {
-    if (store.nonEmpty) {
-      store = store.filter(p => p.vehicle.id != vehicle.vehicle.id)
+    if (store.vehicles.nonEmpty) {
+      store.vehicles = store.vehicles.filter(p => p.id != vehicle.vehicle.id)
       Task.effect(1)
     } else Task.effect(0)
   }
@@ -43,31 +43,54 @@ class VehicleDAOMock(var store: List[Vehicle] = List.empty, vehicleFleetDaoMock:
   override def markAsDeleted(vehicleId: Long): Task[Vehicle] =
     throw new NotImplementedError("Vehicle mark as remove is not implemented for testing purposes.")
 
-  override def find(id: Long): Task[Option[Vehicle]] =
-    for {
-      vehicle <- Task.effect(store.find(u => u.vehicle.ID == id))
-      fleets = vehicleFleetDaoMock.store.filter(vf => vf.vehicleId == id).map(vf => LightFleet(Some(vf.fleetId), ""))
-      vf <- Task.effect(vehicle.map(v => Vehicle(v.vehicle, fleets)))
-    } yield vf
+  override def find(id: Long): Task[Option[Vehicle]] = {
+    val fleetsId = store.vehicleFleets.filter(vf => vf.vehicleId == id).map(_.fleetId)
+    val fleets = store.fleets.filter(v => fleetsId.contains(v.ID))
+    Task.effect(store.vehicles.find(u => u.ID == id).map(lv => Vehicle(lv, fleets)))
+  }
 
-  override def findAll(offset: Int, limit: Int): Task[List[Vehicle]] = Task.effect(store)
+  override def findAll(offset: Int, limit: Int): Task[List[Vehicle]] =
+    Task.effect {
+      var allVehicles: List[Vehicle] = List.empty
+      store.vehicles.foreach(vf => {
+        val fleetId = store.vehicleFleets.filter(lf => lf.vehicleId == vf.ID)
+        val fleets = store.fleets.filter(v => fleetId.contains(v.ID))
+        allVehicles = allVehicles.appended(Vehicle(vf, fleets))
+      })
+      allVehicles
+    }
 
   override def findAllActive(offset: Int, limit: Int): Task[List[Vehicle]] =
-    Task.effect(store.filter(u => u.vehicle.deletedAt.isEmpty))
+    Task.effect {
+      var allFleets: List[Vehicle] = List.empty
+      store.vehicles.foreach(vf => {
+        if (vf.deletedAt.isEmpty) {
+          val fleetId = store.vehicleFleets.filter(lf => lf.vehicleId == vf.ID)
+          val fleets = store.fleets.filter(v => fleetId.contains(v.ID))
+          allFleets = allFleets.appended(Vehicle(vf, fleets))
+        }
+      })
+      allFleets
+    }
 
-  override def findList(ids: List[Long]): Task[List[Vehicle]] =
-    Task.effect(store.filter(u => ids.contains(u.vehicle.ID)))
+  override def findList(ids: List[Long]): Task[List[Vehicle]] = {
+    Task.effect {
+      var allFleets: List[Vehicle] = List.empty
+      store.vehicles
+        .filter(u => ids.contains(u.ID))
+        .foreach(vf => {
+          val fleetId = store.vehicleFleets.filter(lf => lf.vehicleId == vf.ID)
+          val fleets = store.fleets.filter(v => fleetId.contains(v.ID))
+          allFleets = allFleets.appended(Vehicle(vf, fleets))
+        })
+      allFleets
+    }
+  }
 
-  override def count(): Task[Int] = Task.effect(store.size)
+  override def count(): Task[Int] = Task.effect(store.vehicles.size)
 
   override def countActive(): Task[Int] =
-    Task.effect(store.count(u => u.vehicle.deletedAt.isEmpty))
+    Task.effect(store.vehicles.count(u => u.deletedAt.isEmpty))
 
   override var maxId: Long = 0
-}
-
-object VehicleDAOMock {
-  def apply(vehicles: List[Vehicle], vehicleFleetDaoMock: VehicleFleetDaoMock): VehicleDAOMock = {
-    new VehicleDAOMock(vehicles, vehicleFleetDaoMock)
-  }
 }

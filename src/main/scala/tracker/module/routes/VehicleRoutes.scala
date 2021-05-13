@@ -90,7 +90,7 @@ class VehicleRoutes(vehicleService: VehicleService, positionService: PositionSer
     req
       .as[VehiclePositionsRequest]
       .flatMap(positionService.getByVehicle)
-      .flatMap(Ok(_))
+      .flatMap(l => if (l.isEmpty) NotFound() else Ok(l))
   }
 
   private def handleGetVehiclePositionHistory(req: Request[Task]): Task[Response[Task]] = {
